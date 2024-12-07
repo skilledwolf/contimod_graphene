@@ -1,0 +1,51 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "contimod_graphene"
+description = "Basic Hamiltonian definitions for multilayer graphene."
+readme = "README.md"
+requires-python = ">=3.10"
+keywords = ["physics", "condensed matter", "graphene"]
+license = {text = "BSD 2-clause"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3"
+]
+dynamic = ["version"]
+
+dependencies = [
+    "numpy",
+    "scipy",
+    "jax"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black"
+]
+
+[tool.hatch.build.targets.wheel]
+sources = ["src"]
+#only-packages = true
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src"] 
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/contimod_graphene/_version.py"
+
+[tool.hatch.envs.default]
+installer = "uv"
+dependencies = [
+    "numpy",
+    "scipy",
+    "jax"
+]
