@@ -151,73 +151,149 @@ def hamiltonian_2bands(kx, ky, N_layers=3, params=graphene_params_BLG):
 # Multilayer Landau Level basis
 ##############################################################################
 
+def _ll_ops(N_A: int, N_B: int):
+    """
+    Build square (A,A) and (B,B) ladder operators and rectangular (A<-B) and (B<-A)
+    maps consistent with the Dirac LL algebra.
+
+    Shapes:
+      a_A, adag_A: (N_A, N_A)
+      a_B, adag_B: (N_B, N_B)
+      a_BA, adag_BA: (N_A, N_B)      # A <- B   with a   or a^\dagger
+      a_AB, adag_AB: (N_B, N_A)      # B <- A   with a   or a^\dagger
+      I_AB: (N_A, N_B), I_BA: (N_B, N_A)  # rectangular 'identity' (index preserving)
+    """
+    import numpy as _np
+    # square lowering (superdiagonal) and raising (transpose)
+    a_A = _np.zeros((N_A, N_A));            a_B = _np.zeros((N_B, N_B))
+    for n in range(1, N_A): a_A[n-1, n] = _np.sqrt(n)
+    for n in range(1, N_B): a_B[n-1, n] = _np.sqrt(n)
+    adag_A = a_A.T.copy();                  adag_B = a_B.T.copy()
+
+    # rectangular A <- B: a (lowering) puts weight on row n-1, col n
+    a_BA = _np.zeros((N_A, N_B))
+    for n in range(1, N_B):
+        if n-1 < N_A:
+            a_BA[n-1, n] = _np.sqrt(n)
+
+    # rectangular A <- B: a^\dagger (raising) puts weight on row n+1, col n
+    adag_BA = _np.zeros((N_A, N_B))
+    for n in range(0, N_B):                 # inclusive upper bound (important!)
+        if n+1 < N_A:
+            adag_BA[n+1, n] = _np.sqrt(n+1)
+
+    # rectangular B <- A: a lowers A-index by 1
+    a_AB = _np.zeros((N_B, N_A))
+    for m in range(1, N_A):
+        if m-1 < N_B:
+            a_AB[m-1, m] = _np.sqrt(m)
+
+    # rectangular B <- A: a^\dagger raises A-index by 1
+    adag_AB = _np.zeros((N_B, N_A))
+    for m in range(0, N_A):                 # inclusive upper bound (important!)
+        if m+1 < N_B:
+            adag_AB[m+1, m] = _np.sqrt(m+1)
+
+    # rectangular index-preserving maps
+    I_AB = _np.zeros((N_A, N_B))
+    for n in range(min(N_A, N_B)):
+        I_AB[n, n] = 1.0
+    I_BA = I_AB.T.copy()
+
+    return dict(
+        a_A=a_A, adag_A=adag_A, a_B=a_B, adag_B=adag_B,
+        a_BA=a_BA, adag_BA=adag_BA, a_AB=a_AB, adag_AB=adag_AB,
+        I_AB=I_AB, I_BA=I_BA
+    )
+
 def hamiltonian_LL(B, N_layers=3, Ncut=50, flip_valley=False, params=graphene_params_BLG):
-    # Magnetic length
-    # a = 2.46  # Angstrom
-    # l_B = 260 / np.sqrt(B)  # magnetic length in Angstrom where B is magnetic field in Tesla
-    l_B = 104.29 / np.sqrt(B)  # magnetic length in Angstrom where B is magnetic field in Tesla
+    """
+    Multilayer (ABC) graphene Landau-level Hamiltonian in an asymmetric LL basis
+    that removes unphysical LLs by using different numbers of LLs on the two
+    sublattices. For valley K we use (N_B, N_A) = (Ncut, Ncut-1); for K' we swap.
 
-    # Define creation and annihilation operators for the Landau levels
-    a = np.diag(np.sqrt(np.arange(1, Ncut)), +1)  # Annihilation operator
-    a_dag = np.diag(np.sqrt(np.arange(1, Ncut)), -1)  # Creation operator
+    Args:
+      B: magnetic field [T]
+      N_layers: number of layers
+      Ncut: LL cutoff on the sublattice that hosts the n=0 mode
+      flip_valley: if True, build K' (swap sublattices + sign switches)
+      params: dict with keys "gamma0", "gamma1", "gamma2", "gamma3", "gamma4", "U"
+    Returns:
+      Dense numpy array of shape (N_layers*(2*Ncut-1), N_layers*(2*Ncut-1))
+    """
 
-    # pi and pi^dagger in terms of ladder operators
-    pi = np.sqrt(2.0) / l_B * a
-    pi_dag = np.sqrt(2.0) / l_B * a_dag
+    if Ncut < 2:
+        raise ValueError("Ncut must be >= 2 for a meaningful asymmetric LL basis.")
 
-    if flip_valley:
-        (pi, pi_dag) = (-pi_dag, -pi)
+    # magnetic length [Å]
+    l_B = 104.29 / np.sqrt(B)
+    rt2_over_lB = np.sqrt(2.0) / l_B
 
-    # Identity matrices for blocks
-    INcut = np.eye(Ncut)  # Identity for the Landau level space
-
-    # Retrieve parameters with defaults
+    # parameters
     p = lambda x: params.get(x, 0.0)
-    v = np.sqrt(3) * p("gamma0") / 2
-    v3 = np.sqrt(3) * p("gamma3") / 2
-    v4 = np.sqrt(3) * p("gamma4") / 2
-    gamma1 = p("gamma1")
-    gamma2 = p("gamma2")
-    U = p("U")
+    v   = np.sqrt(3) * p("gamma0") / 2
+    v3  = np.sqrt(3) * p("gamma3") / 2
+    v4  = np.sqrt(3) * p("gamma4") / 2
+    γ1  = p("gamma1")
+    γ2  = p("gamma2")
+    U   = p("U")
 
-    # Define D, V, W matrices using np.block for proper block assembly
-    D = np.block([
-        [np.zeros((Ncut, Ncut)), v * pi_dag],
-        [np.zeros((Ncut, Ncut)), np.zeros((Ncut, Ncut))]
-    ])
+    # Choose LL dimensions per valley:
+    # K valley: zero mode on B    -> (N_B, N_A) = (Ncut,   Ncut-1)
+    # K' valley: zero mode on A   -> (N_B, N_A) = (Ncut-1, Ncut)
+    if not flip_valley:
+        N_A, N_B = Ncut - 1, Ncut
+    else:
+        N_A, N_B = Ncut, Ncut - 1
 
-    V = np.block([
-        [-v4 * pi_dag, v3 * pi],
-        [gamma1 * INcut, -v4 * pi_dag]
-    ])
+    ops = _ll_ops(N_A, N_B)
 
-    W = np.block([
-        [np.zeros((Ncut, Ncut)), (gamma2 / 2) * INcut],
-        [np.zeros((Ncut, Ncut)), np.zeros((Ncut, Ncut))]
-    ])
+    # ---------- per-layer blocks ----------
+    # K valley uses H_AB ~ v * a; K' uses H_AB ~ -v * a^\dagger
+    if not flip_valley:
+        # A<-B (intralayer Dirac)
+        D_AB = v * rt2_over_lB * ops["a_BA"]          # H_AB ∝ a
+        # A<-A and B<-B (interlayer γ4 terms)
+        V_AA = -v4 * rt2_over_lB * ops["a_A"]
+        V_BB = -v4 * rt2_over_lB * ops["a_B"]
+        # A<-B (interlayer γ3 term)
+        V_AB =  v3 * rt2_over_lB * ops["adag_BA"]     # ∝ a^\dagger
+    else:
+        D_AB = -v * rt2_over_lB * ops["adag_BA"]      # H_AB ∝ -a^\dagger
+        V_AA =  v4 * rt2_over_lB * ops["adag_A"]
+        V_BB =  v4 * rt2_over_lB * ops["adag_B"]
+        V_AB = -v3 * rt2_over_lB * ops["a_BA"]
 
-    # Initialize Hamiltonian M
-    M = np.kron(np.eye(N_layers), D)  # Diagonal blocks
+    # Zeros for convenience
+    Z_AA = np.zeros((N_A, N_A))
+    Z_BB = np.zeros((N_B, N_B))
+    Z_BA = np.zeros((N_B, N_A))
 
-    # Add V matrices on the first off-diagonal
+    # Intra-layer D block (square of size N_A+N_B). The BA block comes from Hermitian conjugation later.
+    D = np.block([[Z_AA, D_AB],
+                  [Z_BA, Z_BB]])
+
+    # First nearest interlayer block V (couples layer ℓ to ℓ+1)
+    V = np.block([[V_AA,               V_AB],
+                  [γ1 * ops["I_BA"],   V_BB]])
+
+    # Second nearest interlayer block W (γ2)
+    W = np.block([[np.zeros_like(Z_AA), (γ2 / 2.0) * ops["I_AB"]],
+                  [Z_BA,                Z_BB]])
+
+    # ---------- assemble multilayer Hamiltonian ----------
+    d_layer = N_A + N_B
+    M = np.kron(np.eye(N_layers), D)
     if N_layers > 1:
         M += np.kron(np.diag(np.ones(N_layers - 1), k=1), V)
-
-    # Add W matrices on the second off-diagonal if N > 2
     if N_layers > 2:
         M += np.kron(np.diag(np.ones(N_layers - 2), k=2), W)
 
-    # Ensure the Hamiltonian is Hermitian
+    # Hermitize (adds the BA block and interlayer lower-diagonal blocks)
     M = M + M.conj().T
 
-    # Add the potential due to the on-site energies (if any)
+    # Layer potential (U) distributed linearly across layers, same on both sublattices
     if not np.isclose(U, 0.0):
-        potential = np.kron(
-            np.diag(np.linspace(U / 2, -U / 2, N_layers)),
-            np.eye(2 * Ncut)
-        )
-        M += potential
+        M += np.kron(np.diag(np.linspace(U/2.0, -U/2.0, N_layers)), np.eye(d_layer))
 
     return M
-
-
