@@ -14,54 +14,6 @@ from contimod_graphene.params import *
 # General Multilayer Graphene
 ##############################################################################
 
-def get_hamiltonian(N_layers=2, params=graphene_params_BLG):
-    """
-    Get the Hamiltonian function for N-layer Rhombohedral (ABC) graphene.
-
-    Args:
-        N_layers (int): Number of layers.
-        params (dict): Dictionary of graphene parameters.
-
-    Returns:
-        function: A JIT-compiled function `h(kx, ky)` that returns the Hamiltonian matrix.
-    """
-    h_func = partial(hamiltonian, N_layers=N_layers, params=params)
-    return h_func
-
-def get_2band_hamiltonian(N_layers=2, params=graphene_params_BLG):
-    """
-    Get the effective 2-band Hamiltonian function for N-layer Rhombohedral (ABC) graphene.
-
-    Args:
-        N_layers (int): Number of layers.
-        params (dict): Dictionary of graphene parameters.
-
-    Returns:
-        function: A JIT-compiled function `h(kx, ky)` that returns the 2x2 effective Hamiltonian matrix.
-    """
-    h_func = partial(hamiltonian_2bands, N_layers=N_layers, params=params)
-    return h_func
-
-def get_hamiltonian_LL(N_layers=2, Ncut=50, flip_valley=False, params=graphene_params_BLG):
-    """
-    Get the Landau Level Hamiltonian function for N-layer Rhombohedral (ABC) graphene.
-
-    Args:
-        N_layers (int): Number of layers.
-        Ncut (int): Cutoff for the number of Landau levels.
-        flip_valley (bool): If True, returns the Hamiltonian for the K' valley. Default is False (K valley).
-        params (dict): Dictionary of graphene parameters.
-
-    Returns:
-        function: A function `h(B)` that returns the Hamiltonian matrix for a given magnetic field B.
-    """
-    h_func = partial(hamiltonian_LL, N_layers=N_layers, Ncut=Ncut, flip_valley=flip_valley, params=params)
-    return h_func
-
-##############################################################################
-# General Multilayer Graphene
-##############################################################################
-
 @partial(jax.jit, static_argnames=['N_layers'])
 def hamiltonian(kx, ky, N_layers=3, params=graphene_params_BLG):
     """
@@ -179,10 +131,41 @@ def hamiltonian_2bands(kx, ky, N_layers=3, params=graphene_params_BLG):
     # Return the renormalized effective 2x2 Hamiltonian.
     return S.T.conj() @ H0 @ S
 
-##############################################################################
-# Multilayer Landau Level basis
-##############################################################################
+def hamiltonian_LL(B, N_layers=3, Ncut=50, flip_valley=False, params=graphene_params_BLG):
+    """
+    Multilayer (ABC) graphene Landau-level Hamiltonian in an asymmetric LL basis
+    that removes unphysical LLs by using different numbers of LLs on the two
+    sublattices. For valley K we use (N_B, N_A) = (Ncut, Ncut-1); for K' we swap.
 
+    Args:
+      B: magnetic field [T]
+      N_layers: number of layers
+      Ncut: LL cutoff on the sublattice that hosts the n=0 mode
+      flip_valley: if True, build K' (swap sublattices + sign switches)
+      params: dict with keys "gamma0", "gamma1", "gamma2", "gamma3", "gamma4", "U"
+    Returns:
+      Dense numpy array of shape (N_layers*(2*Ncut-1), N_layers*(2*Ncut-1))
+    """
+
+    if Ncut < 2:
+        raise ValueError("Ncut must be >= 2 for a meaningful asymmetric LL basis.")
+
+    # magnetic length [Å]
+    l_B = 104.29 / np.sqrt(B)
+    rt2_over_lB = np.sqrt(2.0) / l_B
+
+    # parameters
+    p = lambda x: params.get(x, 0.0)
+    v   = np.sqrt(3) * p("gamma0") / 2
+    v3  = np.sqrt(3) * p("gamma3") / 2
+    v4  = np.sqrt(3) * p("gamma4") / 2
+    γ1  = p("gamma1")
+    γ2  = p("gamma2")
+    U   = p("U")
+
+    # Choose LL dimensions per valley:
+    # K valley: zero mode on B    -> (N_B, N_A) = (Ncut,   Ncut-1)
+    # K' valley: zero mode on A   -> (N_B, N_A) = (Ncut-1, Ncut)
     if not flip_valley:
         N_A, N_B = Ncut - 1, Ncut
     else:
@@ -239,3 +222,49 @@ def hamiltonian_2bands(kx, ky, N_layers=3, params=graphene_params_BLG):
         M += np.kron(np.diag(np.linspace(U/2.0, -U/2.0, N_layers)), np.eye(d_layer))
 
     return M
+
+def get_hamiltonian(N_layers=2, params=graphene_params_BLG):
+    """
+    Get the Hamiltonian function for N-layer Rhombohedral (ABC) graphene.
+
+    Args:
+        N_layers (int): Number of layers.
+        params (dict): Dictionary of graphene parameters.
+
+    Returns:
+        function: A JIT-compiled function `h(kx, ky)` that returns the Hamiltonian matrix.
+    """
+    h_func = partial(hamiltonian, N_layers=N_layers, params=params)
+    return h_func
+
+def get_2band_hamiltonian(N_layers=2, params=graphene_params_BLG):
+    """
+    Get the effective 2-band Hamiltonian function for N-layer Rhombohedral (ABC) graphene.
+
+    Args:
+        N_layers (int): Number of layers.
+        params (dict): Dictionary of graphene parameters.
+
+    Returns:
+        function: A JIT-compiled function `h(kx, ky)` that returns the 2x2 effective Hamiltonian matrix.
+    """
+    h_func = partial(hamiltonian_2bands, N_layers=N_layers, params=params)
+    return h_func
+
+def get_hamiltonian_LL(N_layers=2, Ncut=50, flip_valley=False, params=graphene_params_BLG):
+    """
+    Get the Landau Level Hamiltonian function for N-layer Rhombohedral (ABC) graphene.
+
+    Args:
+        N_layers (int): Number of layers.
+        Ncut (int): Cutoff for the number of Landau levels.
+        flip_valley (bool): If True, returns the Hamiltonian for the K' valley. Default is False (K valley).
+        params (dict): Dictionary of graphene parameters.
+
+    Returns:
+        function: A function `h(B)` that returns the Hamiltonian matrix for a given magnetic field B.
+    """
+    h_func = partial(hamiltonian_LL, N_layers=N_layers, Ncut=Ncut, flip_valley=flip_valley, params=params)
+    return h_func
+
+

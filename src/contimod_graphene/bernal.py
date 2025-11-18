@@ -14,36 +14,6 @@ from contimod_graphene.utils import extract_params, layer_coordinates, sublattic
 # General Multilayer Graphene (Bernal / ABA)
 ##############################################################################
 
-def get_hamiltonian(N_layers=2, params=graphene_params_BLG):
-    """
-    Get the Hamiltonian function for N-layer Bernal (ABA) graphene.
-
-    Args:
-        N_layers (int): Number of layers.
-        params (dict): Dictionary of graphene parameters (gamma0, gamma1, etc.).
-
-    Returns:
-        function: A JIT-compiled function `h(kx, ky)` that returns the Hamiltonian matrix.
-    """
-    h_func = partial(hamiltonian, N_layers=N_layers, params=params)
-    return h_func
-
-def get_hamiltonian_LL(N_layers=2, Ncut=50, flip_valley=False, params=graphene_params_BLG):
-    """
-    Get the Landau Level Hamiltonian function for N-layer Bernal (ABA) graphene.
-
-    Args:
-        N_layers (int): Number of layers.
-        Ncut (int): Cutoff for the number of Landau levels.
-        flip_valley (bool): If True, returns the Hamiltonian for the K' valley. Default is False (K valley).
-        params (dict): Dictionary of graphene parameters.
-
-    Returns:
-        function: A function `h(B)` that returns the Hamiltonian matrix for a given magnetic field B.
-    """
-    h_func = partial(hamiltonian_LL, N_layers=N_layers, Ncut=Ncut, flip_valley=flip_valley, params=params)
-    return h_func
-
 @partial(jax.jit, static_argnames=['N_layers'])
 def hamiltonian(kx, ky, N_layers=3, params=graphene_params_BLG): # see 10.1103/PhysRevB.83.165443 or https://ar5iv.labs.arxiv.org/html/1404.1603
     """
@@ -147,9 +117,42 @@ def hamiltonian(kx, ky, N_layers=3, params=graphene_params_BLG): # see 10.1103/P
 
     return M
 
-##############################################################################
-# Multilayer Landau Level basis
-##############################################################################
+def hamiltonian_LL(B, N_layers=3, Ncut=50, flip_valley=False, params=graphene_params_BLG):
+    """
+    Multilayer (ABA) graphene Landau-level Hamiltonian.
+    
+    Constructs the Hamiltonian in a basis of Landau levels. Uses an asymmetric basis
+    (N_A != N_B) to avoid fermion doubling and properly describe the zero-energy modes.
+
+    Args:
+        B (float): Magnetic field in Tesla.
+        N_layers (int): Number of layers.
+        Ncut (int): Cutoff for the number of Landau levels.
+        flip_valley (bool): If True, compute for K' valley. Default False (K valley).
+        params (dict): Dictionary of graphene parameters.
+
+    Returns:
+        numpy.ndarray: The Hamiltonian matrix.
+    """
+
+    if Ncut < 2:
+        raise ValueError("Ncut must be >= 2 for a meaningful asymmetric LL basis.")
+
+    # magnetic length [Å]
+    l_B = 104.29 / np.sqrt(B)
+    rt2_over_lB = np.sqrt(2.0) / l_B
+
+    # parameters
+    p = lambda x: params.get(x, 0.0)
+    v   = np.sqrt(3) * p("gamma0") / 2
+    v3  = np.sqrt(3) * p("gamma3") / 2
+    v4  = np.sqrt(3) * p("gamma4") / 2
+    v5  = np.sqrt(3) * p("gamma5") / 2 # Not used in velocity form, gamma5 is energy
+    γ1  = p("gamma1")
+    γ2  = p("gamma2")
+    γ5  = p("gamma5")
+    U   = p("U")
+    delta = p("delta")
 
     # Choose LL dimensions per valley:
     if not flip_valley:
@@ -294,3 +297,35 @@ def hamiltonian(kx, ky, N_layers=3, params=graphene_params_BLG): # see 10.1103/P
         M += np.kron(np.diag(np.linspace(U/2.0, -U/2.0, N_layers)), np.eye(d_layer))
 
     return M
+
+def get_hamiltonian(N_layers=2, params=graphene_params_BLG):
+    """
+    Get the Hamiltonian function for N-layer Bernal (ABA) graphene.
+
+    Args:
+        N_layers (int): Number of layers.
+        params (dict): Dictionary of graphene parameters (gamma0, gamma1, etc.).
+
+    Returns:
+        function: A JIT-compiled function `h(kx, ky)` that returns the Hamiltonian matrix.
+    """
+    h_func = partial(hamiltonian, N_layers=N_layers, params=params)
+    return h_func
+
+def get_hamiltonian_LL(N_layers=2, Ncut=50, flip_valley=False, params=graphene_params_BLG):
+    """
+    Get the Landau Level Hamiltonian function for N-layer Bernal (ABA) graphene.
+
+    Args:
+        N_layers (int): Number of layers.
+        Ncut (int): Cutoff for the number of Landau levels.
+        flip_valley (bool): If True, returns the Hamiltonian for the K' valley. Default is False (K valley).
+        params (dict): Dictionary of graphene parameters.
+
+    Returns:
+        function: A function `h(B)` that returns the Hamiltonian matrix for a given magnetic field B.
+    """
+    h_func = partial(hamiltonian_LL, N_layers=N_layers, Ncut=Ncut, flip_valley=flip_valley, params=params)
+    return h_func
+
+
