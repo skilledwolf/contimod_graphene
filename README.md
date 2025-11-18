@@ -44,17 +44,11 @@ hatch shell
 
 If you are sure that you will not need to modify the package, then open the terminal and run
 ```bash
-pip install git+https://gitlab.com/wolf-physics/contimod-repos/contimod_graphene.git
+pip install git+https://github.com/skilledwolf/contimod_graphene.git
 ```
 This will allow you to do `import contimod as cm` in your python code. You can uninstall the package with `pip uninstall contimod_graphene`.
 
-### Option 3 (cloud)
-
-You can launch a private cloud computing instance of this repository on [gitpod.io](https://www.gitpod.io). This will give you access to a out-of-the-box pre-configured Linux setup, where you can immediately use the package. Please note that we have no affiliation with gitpod whatsoever, use their service at your own discretion. Also note that their free account has usage limits.
-
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://gitlab.com/wolf-physics/contimod-repos/contimod_graphene.git)
-
-### Option 4 (cross-platform)
+### Option 3 (cross-platform)
 
 *Note: This method is not tested on all platforms. It may or may not fail on arm-based systems (such as Apple Silicon).*
 
@@ -64,10 +58,11 @@ Third-party requirements:
 
 To spin up a containerized jupyter environment, run:
 ```bash
-$ jupyter-repo2docker https://gitlab.com/wolf-physics/contimod-repos/contimod_graphene.git
+$ jupyter-repo2docker https://github.com/skilledwolf/contimod_graphene.git
 ```
 
 While this is the fastest way to spin up a container, you can also containerize this package yourself.
 
 ## Credit 
 This package is developed and maintained by Dr. Tobias Wolf. Feel free to contact us, and please give us credit if you use this work. 
+
