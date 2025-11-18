@@ -7,48 +7,8 @@ jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
 import jax.scipy as jsp
 from functools import partial
-
-# Utility function to extract graphene parameters
-def extract_params(params, keys):
-    """
-    Extract parameters from a dictionary.
-
-    Args:
-        params (dict): Dictionary of parameters.
-        keys (list): List of keys to extract.
-
-    Returns:
-        list: List of values corresponding to the keys. Returns 0.0 if a key is missing.
-    """
-    return [params.get(key, 0.0) for key in keys]
-
+from contimod_graphene.utils import extract_params, layer_coordinates, sublattice_coordinates, construct_ll_ops
 from contimod_graphene.params import *
-
-
-def layer_coordinates(N_layers):
-    """
-    Get the z-coordinates of the layers.
-
-    Args:
-        N_layers (int): Number of layers.
-
-    Returns:
-        numpy.ndarray: Array of z-coordinates for each site (2 sites per layer).
-    """
-    z_extent = N_layers * 0.335 # nm 
-    return np.repeat(np.linspace(-0.5, 0.5, N_layers), 2) if N_layers > 1 else np.array([0.0, 0.0])
-
-def sublattice_coordinates(N_layers):
-    """
-    Get the sublattice coordinates (0 or 1) for each site.
-
-    Args:
-        N_layers (int): Number of layers.
-
-    Returns:
-        numpy.ndarray: Array of sublattice indices (0 for A, 1 for B) for each site.
-    """
-    return np.tile([0.0, 1.0], N_layers) if N_layers > 1 else np.array([0.0, 1.0])
 
 ##############################################################################
 # General Multilayer Graphene
@@ -223,102 +183,12 @@ def hamiltonian_2bands(kx, ky, N_layers=3, params=graphene_params_BLG):
 # Multilayer Landau Level basis
 ##############################################################################
 
-def _ll_ops(N_A: int, N_B: int):
-    """
-    Build square (A,A) and (B,B) ladder operators and rectangular (A<-B) and (B<-A)
-    maps consistent with the Dirac LL algebra.
-
-    Shapes:
-      a_A, adag_A: (N_A, N_A)
-      a_B, adag_B: (N_B, N_B)
-      a_BA, adag_BA: (N_A, N_B)      # A <- B   with a   or a^\dagger
-      a_AB, adag_AB: (N_B, N_A)      # B <- A   with a   or a^\dagger
-      I_AB: (N_A, N_B), I_BA: (N_B, N_A)  # rectangular 'identity' (index preserving)
-    """
-    import numpy as _np
-    # square lowering (superdiagonal) and raising (transpose)
-    a_A = _np.zeros((N_A, N_A));            a_B = _np.zeros((N_B, N_B))
-    for n in range(1, N_A): a_A[n-1, n] = _np.sqrt(n)
-    for n in range(1, N_B): a_B[n-1, n] = _np.sqrt(n)
-    adag_A = a_A.T.copy();                  adag_B = a_B.T.copy()
-
-    # rectangular A <- B: a (lowering) puts weight on row n-1, col n
-    a_BA = _np.zeros((N_A, N_B))
-    for n in range(1, N_B):
-        if n-1 < N_A:
-            a_BA[n-1, n] = _np.sqrt(n)
-
-    # rectangular A <- B: a^\dagger (raising) puts weight on row n+1, col n
-    adag_BA = _np.zeros((N_A, N_B))
-    for n in range(0, N_B):                 # inclusive upper bound (important!)
-        if n+1 < N_A:
-            adag_BA[n+1, n] = _np.sqrt(n+1)
-
-    # rectangular B <- A: a lowers A-index by 1
-    a_AB = _np.zeros((N_B, N_A))
-    for m in range(1, N_A):
-        if m-1 < N_B:
-            a_AB[m-1, m] = _np.sqrt(m)
-
-    # rectangular B <- A: a^\dagger raises A-index by 1
-    adag_AB = _np.zeros((N_B, N_A))
-    for m in range(0, N_A):                 # inclusive upper bound (important!)
-        if m+1 < N_B:
-            adag_AB[m+1, m] = _np.sqrt(m+1)
-
-    # rectangular index-preserving maps
-    I_AB = _np.zeros((N_A, N_B))
-    for n in range(min(N_A, N_B)):
-        I_AB[n, n] = 1.0
-    I_BA = I_AB.T.copy()
-
-    return dict(
-        a_A=a_A, adag_A=adag_A, a_B=a_B, adag_B=adag_B,
-        a_BA=a_BA, adag_BA=adag_BA, a_AB=a_AB, adag_AB=adag_AB,
-        I_AB=I_AB, I_BA=I_BA
-    )
-
-def hamiltonian_LL(B, N_layers=3, Ncut=50, flip_valley=False, params=graphene_params_BLG):
-    """
-    Multilayer (ABC) graphene Landau-level Hamiltonian in an asymmetric LL basis
-    that removes unphysical LLs by using different numbers of LLs on the two
-    sublattices. For valley K we use (N_B, N_A) = (Ncut, Ncut-1); for K' we swap.
-
-    Args:
-      B: magnetic field [T]
-      N_layers: number of layers
-      Ncut: LL cutoff on the sublattice that hosts the n=0 mode
-      flip_valley: if True, build K' (swap sublattices + sign switches)
-      params: dict with keys "gamma0", "gamma1", "gamma2", "gamma3", "gamma4", "U"
-    Returns:
-      Dense numpy array of shape (N_layers*(2*Ncut-1), N_layers*(2*Ncut-1))
-    """
-
-    if Ncut < 2:
-        raise ValueError("Ncut must be >= 2 for a meaningful asymmetric LL basis.")
-
-    # magnetic length [Å]
-    l_B = 104.29 / np.sqrt(B)
-    rt2_over_lB = np.sqrt(2.0) / l_B
-
-    # parameters
-    p = lambda x: params.get(x, 0.0)
-    v   = np.sqrt(3) * p("gamma0") / 2
-    v3  = np.sqrt(3) * p("gamma3") / 2
-    v4  = np.sqrt(3) * p("gamma4") / 2
-    γ1  = p("gamma1")
-    γ2  = p("gamma2")
-    U   = p("U")
-
-    # Choose LL dimensions per valley:
-    # K valley: zero mode on B    -> (N_B, N_A) = (Ncut,   Ncut-1)
-    # K' valley: zero mode on A   -> (N_B, N_A) = (Ncut-1, Ncut)
     if not flip_valley:
         N_A, N_B = Ncut - 1, Ncut
     else:
         N_A, N_B = Ncut, Ncut - 1
 
-    ops = _ll_ops(N_A, N_B)
+    ops = construct_ll_ops(N_A, N_B)
 
     # ---------- per-layer blocks ----------
     # K valley uses H_AB ~ v * a; K' uses H_AB ~ -v * a^\dagger
