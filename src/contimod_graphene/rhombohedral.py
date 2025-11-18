@@ -10,16 +10,44 @@ from functools import partial
 
 # Utility function to extract graphene parameters
 def extract_params(params, keys):
+    """
+    Extract parameters from a dictionary.
+
+    Args:
+        params (dict): Dictionary of parameters.
+        keys (list): List of keys to extract.
+
+    Returns:
+        list: List of values corresponding to the keys. Returns 0.0 if a key is missing.
+    """
     return [params.get(key, 0.0) for key in keys]
 
 from contimod_graphene.params import *
 
 
 def layer_coordinates(N_layers):
+    """
+    Get the z-coordinates of the layers.
+
+    Args:
+        N_layers (int): Number of layers.
+
+    Returns:
+        numpy.ndarray: Array of z-coordinates for each site (2 sites per layer).
+    """
     z_extent = N_layers * 0.335 # nm 
     return np.repeat(np.linspace(-0.5, 0.5, N_layers), 2) if N_layers > 1 else np.array([0.0, 0.0])
 
 def sublattice_coordinates(N_layers):
+    """
+    Get the sublattice coordinates (0 or 1) for each site.
+
+    Args:
+        N_layers (int): Number of layers.
+
+    Returns:
+        numpy.ndarray: Array of sublattice indices (0 for A, 1 for B) for each site.
+    """
     return np.tile([0.0, 1.0], N_layers) if N_layers > 1 else np.array([0.0, 1.0])
 
 ##############################################################################
@@ -27,14 +55,46 @@ def sublattice_coordinates(N_layers):
 ##############################################################################
 
 def get_hamiltonian(N_layers=2, params=graphene_params_BLG):
+    """
+    Get the Hamiltonian function for N-layer Rhombohedral (ABC) graphene.
+
+    Args:
+        N_layers (int): Number of layers.
+        params (dict): Dictionary of graphene parameters.
+
+    Returns:
+        function: A JIT-compiled function `h(kx, ky)` that returns the Hamiltonian matrix.
+    """
     h_func = partial(hamiltonian, N_layers=N_layers, params=params)
     return h_func
 
 def get_2band_hamiltonian(N_layers=2, params=graphene_params_BLG):
+    """
+    Get the effective 2-band Hamiltonian function for N-layer Rhombohedral (ABC) graphene.
+
+    Args:
+        N_layers (int): Number of layers.
+        params (dict): Dictionary of graphene parameters.
+
+    Returns:
+        function: A JIT-compiled function `h(kx, ky)` that returns the 2x2 effective Hamiltonian matrix.
+    """
     h_func = partial(hamiltonian_2bands, N_layers=N_layers, params=params)
     return h_func
 
 def get_hamiltonian_LL(N_layers=2, Ncut=50, flip_valley=False, params=graphene_params_BLG):
+    """
+    Get the Landau Level Hamiltonian function for N-layer Rhombohedral (ABC) graphene.
+
+    Args:
+        N_layers (int): Number of layers.
+        Ncut (int): Cutoff for the number of Landau levels.
+        flip_valley (bool): If True, returns the Hamiltonian for the K' valley. Default is False (K valley).
+        params (dict): Dictionary of graphene parameters.
+
+    Returns:
+        function: A function `h(B)` that returns the Hamiltonian matrix for a given magnetic field B.
+    """
     h_func = partial(hamiltonian_LL, N_layers=N_layers, Ncut=Ncut, flip_valley=flip_valley, params=params)
     return h_func
 
@@ -44,6 +104,18 @@ def get_hamiltonian_LL(N_layers=2, Ncut=50, flip_valley=False, params=graphene_p
 
 @partial(jax.jit, static_argnames=['N_layers'])
 def hamiltonian(kx, ky, N_layers=3, params=graphene_params_BLG):
+    """
+    Construct the zero-field Hamiltonian for N-layer Rhombohedral (ABC) graphene.
+
+    Args:
+        kx (float): Momentum in x-direction.
+        ky (float): Momentum in y-direction.
+        N_layers (int): Number of layers.
+        params (dict): Dictionary of graphene parameters.
+
+    Returns:
+        jax.numpy.ndarray: The Hamiltonian matrix of shape (2*N_layers, 2*N_layers).
+    """
     keys = ["gamma0", "gamma1", "gamma2", "gamma3", "gamma4", "U", "Delta", "delta"]
     gamma0, gamma1, gamma2, gamma3, gamma4, U, Delta, delta = extract_params(params, keys)
 

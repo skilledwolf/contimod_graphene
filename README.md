@@ -1,7 +1,23 @@
 # contimod_graphene: Helper package for contimod
 
-> **Note:** Our package does not currently include a documentation. *
+`contimod_graphene` provides Hamiltonian construction tools for multilayer graphene systems, specifically supporting:
+- **Bernal (ABA) stacking**
+- **Rhombohedral (ABC) stacking**
 
+It includes functionality for both zero-field Hamiltonians and Landau Level (LL) Hamiltonians.
+
+## Modules
+
+### `contimod_graphene.bernal`
+Provides Hamiltonians for Bernal-stacked (ABA) multilayer graphene.
+- `get_hamiltonian(N_layers, params)`: Returns a function for the zero-field Hamiltonian.
+- `get_hamiltonian_LL(N_layers, Ncut, flip_valley, params)`: Returns a function for the Landau Level Hamiltonian.
+
+### `contimod_graphene.rhombohedral`
+Provides Hamiltonians for Rhombohedral-stacked (ABC) multilayer graphene.
+- `get_hamiltonian(N_layers, params)`: Returns a function for the zero-field Hamiltonian.
+- `get_2band_hamiltonian(N_layers, params)`: Returns a function for the effective 2-band Hamiltonian.
+- `get_hamiltonian_LL(N_layers, Ncut, flip_valley, params)`: Returns a function for the Landau Level Hamiltonian.
 
 ## Installation
 
