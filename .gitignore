@@ -3,6 +3,7 @@
 # THE CORRESPONDING FILES ARE ALSO EXCLUDED FROM UPLOADS.
 
 *.pickle
+temp_*.py
 
 .python-version
 .devcontainer/*
@@ -102,6 +103,9 @@ target/
 # IPython
 profile_default/
 ipython_config.py
+
+# Matplotlib cache
+.mpl_cache/
 
 # pyenv
 #   For a library or package, you might want to ignore these files since the code is

@@ -15,36 +15,36 @@ class TestRhombohedral(unittest.TestCase):
         self.params["U"] = 0.0
 
     def test_hamiltonian_shape_and_hermiticity(self):
-        N_layers = 3
-        h_func = rhombohedral.get_hamiltonian(N_layers=N_layers, params=self.params)
+        n_layers = 3
+        h_func = rhombohedral.get_hamiltonian(n_layers=n_layers, params=self.params)
         
         # Test at a generic k-point
         kx, ky = 0.1, 0.2
         h_mat = h_func(kx, ky)
         
-        self.assertEqual(h_mat.shape, (2*N_layers, 2*N_layers))
+        self.assertEqual(h_mat.shape, (2*n_layers, 2*n_layers))
         
         # Check hermiticity
         self.assertTrue(jnp.allclose(h_mat, h_mat.T.conj()), "Hamiltonian is not Hermitian")
 
     def test_hamiltonian_ll_shape_and_hermiticity(self):
-        N_layers = 3
-        Ncut = 20
-        h_ll_func = rhombohedral.get_hamiltonian_LL(N_layers=N_layers, Ncut=Ncut, params=self.params)
+        n_layers = 3
+        n_cut = 20
+        h_ll_func = rhombohedral.get_hamiltonian_LL(n_layers=n_layers, n_cut=n_cut, params=self.params)
         
         B = 10.0
         h_ll_mat = h_ll_func(B)
         
-        # Expected size: N_layers * (2*Ncut - 1)
-        expected_size = N_layers * (2*Ncut - 1)
+        # Expected size: n_layers * (2*n_cut - 1)
+        expected_size = n_layers * (2*n_cut - 1)
         self.assertEqual(h_ll_mat.shape, (expected_size, expected_size))
         
         # Check hermiticity
         self.assertTrue(jnp.allclose(h_ll_mat, h_ll_mat.T.conj()), "LL Hamiltonian is not Hermitian")
 
     def test_2band_hamiltonian(self):
-        N_layers = 3
-        h_2band_func = rhombohedral.get_2band_hamiltonian(N_layers=N_layers, params=self.params)
+        n_layers = 3
+        h_2band_func = rhombohedral.get_2band_hamiltonian(n_layers=n_layers, params=self.params)
         
         kx, ky = 0.05, 0.05
         h_2band = h_2band_func(kx, ky)

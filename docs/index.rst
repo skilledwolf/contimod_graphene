@@ -1,0 +1,35 @@
+Welcome to contimod_graphene
+==============================
+
+**contimod_graphene** is a Python package for constructing tight-binding Hamiltonians for multilayer graphene systems. It is designed to be fast and easy to use, leveraging JAX for performance.
+
+Features
+--------
+
+*   **Bernal (ABA) Stacking**: Support for N-layer Bernal stacked systems.
+*   **Rhombohedral (ABC) Stacking**: Support for N-layer Rhombohedral stacked systems.
+*   **Landau Levels**: Construction of Hamiltonians in a magnetic field using the Landau Level basis.
+*   **Effective Models**: 2-band effective Hamiltonians for ABC systems.
+
+Documentation
+-------------
+
+.. toctree::
+   :maxdepth: 2
+   :caption: User Guide
+
+   installation
+   usage
+   examples
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference
+
+   modules
+
+Indices
+=======
+
+* :ref:`genindex`
+* :ref:`modindex`

@@ -1,21 +1,17 @@
-from contimod.hamiltonian import ContinuumHamiltonian
-from contimod.utils import pauli, paulikron, matrix_basis
 import numpy as np
-import scipy as sp
-import jax; jax.config.update('jax_platform_name', 'cpu')
-jax.config.update("jax_enable_x64", True)
+import jax
 import jax.numpy as jnp
 import jax.scipy as jsp
 from functools import partial
-from contimod_graphene.params import *
+from contimod_graphene.params import graphene_params_BLG
 from contimod_graphene.utils import extract_params, layer_coordinates, sublattice_coordinates, construct_ll_ops
 
 ##############################################################################
 # General Multilayer Graphene (Bernal / ABA)
 ##############################################################################
 
-@partial(jax.jit, static_argnames=['N_layers'])
-def hamiltonian(kx, ky, N_layers=3, params=graphene_params_BLG): # see 10.1103/PhysRevB.83.165443 or https://ar5iv.labs.arxiv.org/html/1404.1603
+@partial(jax.jit, static_argnames=['n_layers'])
+def hamiltonian(kx: float, ky: float, n_layers: int = 3, params: dict = graphene_params_BLG) -> jnp.ndarray: # see 10.1103/PhysRevB.83.165443 or https://ar5iv.labs.arxiv.org/html/1404.1603
     """
     Construct the zero-field Hamiltonian for N-layer Bernal (ABA) graphene.
     
@@ -29,11 +25,11 @@ def hamiltonian(kx, ky, N_layers=3, params=graphene_params_BLG): # see 10.1103/P
     Args:
         kx (float): Momentum in x-direction.
         ky (float): Momentum in y-direction.
-        N_layers (int): Number of layers.
+        n_layers (int): Number of layers.
         params (dict): Dictionary of graphene parameters.
 
     Returns:
-        jax.numpy.ndarray: The Hamiltonian matrix of shape (2*N_layers, 2*N_layers).
+        jax.numpy.ndarray: The Hamiltonian matrix of shape (2*n_layers, 2*n_layers).
     """
     keys = ["gamma0", "gamma1", "gamma2", "gamma3", "gamma4", "gamma5", "U", "Delta", "delta"]
     gamma0, gamma1, gamma2, gamma3, gamma4, gamma5, U, Delta, delta = extract_params(params, keys)
@@ -48,7 +44,7 @@ def hamiltonian(kx, ky, N_layers=3, params=graphene_params_BLG): # see 10.1103/P
     D = jnp.array([[0, v * jnp.conj(pi)], 
                     [0, 0]])
 
-    if N_layers < 2:
+    if n_layers < 2:
         return D + D.T.conj()
 
     # Interlayer blocks
@@ -71,25 +67,25 @@ def hamiltonian(kx, ky, N_layers=3, params=graphene_params_BLG): # see 10.1103/P
     # We construct the upper triangular part and then hermitianize
     
     # Initialize with zeros
-    # Shape: (2*N_layers, 2*N_layers)
+    # Shape: (2*n_layers, 2*n_layers)
     # But we need to construct it as a JAX array.
     # We can use jnp.block with a list of lists.
     
-    blocks = [[jnp.zeros((2,2)) for _ in range(N_layers)] for _ in range(N_layers)]
+    blocks = [[jnp.zeros((2,2)) for _ in range(n_layers)] for _ in range(n_layers)]
     
-    for i in range(N_layers):
+    for i in range(n_layers):
         # Diagonal D
         blocks[i][i] = D
         
         # Superdiagonal V
-        if i + 1 < N_layers:
+        if i + 1 < n_layers:
             if i % 2 == 0: # 0->1 (Layer 1->2) -> V_odd
                 blocks[i][i+1] = V_odd
             else: # 1->2 (Layer 2->3) -> V_even
                 blocks[i][i+1] = V_even
                 
         # Next-nearest W
-        if i + 2 < N_layers:
+        if i + 2 < n_layers:
             blocks[i][i+2] = W
             
     M = jnp.block(blocks)
@@ -103,7 +99,7 @@ def hamiltonian(kx, ky, N_layers=3, params=graphene_params_BLG): # see 10.1103/P
     delta_even = jnp.diag(jnp.array([delta, 0.0]))
     
     diags = []
-    for i in range(N_layers):
+    for i in range(n_layers):
         if i % 2 == 0:
             diags.append(delta_odd)
         else:
@@ -113,11 +109,11 @@ def hamiltonian(kx, ky, N_layers=3, params=graphene_params_BLG): # see 10.1103/P
     M = M + M_delta
     
     # Add U potential
-    M = M + jnp.kron(jnp.diag(U*jnp.linspace(1/ 2, -1/ 2, N_layers)), jnp.eye(2))
+    M = M + jnp.kron(jnp.diag(U*jnp.linspace(1/ 2, -1/ 2, n_layers)), jnp.eye(2))
 
     return M
 
-def hamiltonian_LL(B, N_layers=3, Ncut=50, flip_valley=False, params=graphene_params_BLG):
+def hamiltonian_LL(B: float, n_layers: int = 3, n_cut: int = 50, flip_valley: bool = False, params: dict = graphene_params_BLG) -> np.ndarray:
     """
     Multilayer (ABA) graphene Landau-level Hamiltonian.
     
@@ -126,8 +122,8 @@ def hamiltonian_LL(B, N_layers=3, Ncut=50, flip_valley=False, params=graphene_pa
 
     Args:
         B (float): Magnetic field in Tesla.
-        N_layers (int): Number of layers.
-        Ncut (int): Cutoff for the number of Landau levels.
+        n_layers (int): Number of layers.
+        n_cut (int): Cutoff for the number of Landau levels.
         flip_valley (bool): If True, compute for K' valley. Default False (K valley).
         params (dict): Dictionary of graphene parameters.
 
@@ -135,8 +131,8 @@ def hamiltonian_LL(B, N_layers=3, Ncut=50, flip_valley=False, params=graphene_pa
         numpy.ndarray: The Hamiltonian matrix.
     """
 
-    if Ncut < 2:
-        raise ValueError("Ncut must be >= 2 for a meaningful asymmetric LL basis.")
+    if n_cut < 2:
+        raise ValueError("n_cut must be >= 2 for a meaningful asymmetric LL basis.")
 
     # magnetic length [Å]
     l_B = 104.29 / np.sqrt(B)
@@ -147,7 +143,6 @@ def hamiltonian_LL(B, N_layers=3, Ncut=50, flip_valley=False, params=graphene_pa
     v   = np.sqrt(3) * p("gamma0") / 2
     v3  = np.sqrt(3) * p("gamma3") / 2
     v4  = np.sqrt(3) * p("gamma4") / 2
-    v5  = np.sqrt(3) * p("gamma5") / 2 # Not used in velocity form, gamma5 is energy
     γ1  = p("gamma1")
     γ2  = p("gamma2")
     γ5  = p("gamma5")
@@ -156,9 +151,9 @@ def hamiltonian_LL(B, N_layers=3, Ncut=50, flip_valley=False, params=graphene_pa
 
     # Choose LL dimensions per valley:
     if not flip_valley:
-        N_A, N_B = Ncut - 1, Ncut
+        N_A, N_B = n_cut - 1, n_cut
     else:
-        N_A, N_B = Ncut, Ncut - 1
+        N_A, N_B = n_cut, n_cut - 1
 
     ops = construct_ll_ops(N_A, N_B)
 
@@ -248,22 +243,22 @@ def hamiltonian_LL(B, N_layers=3, Ncut=50, flip_valley=False, params=graphene_pa
     # ---------- assemble multilayer Hamiltonian ----------
     d_layer = N_A + N_B
     
-    blocks = [[np.zeros((d_layer, d_layer)) for _ in range(N_layers)] for _ in range(N_layers)]
+    blocks = [[np.zeros((d_layer, d_layer)) for _ in range(n_layers)] for _ in range(n_layers)]
     
-    for i in range(N_layers):
+    for i in range(n_layers):
         # Diagonal D (upper part only for hermitian sum? No, D is already partial)
         # In rhombohedral.py, D was full block?
         # "D = np.block([[Z_AA, D_AB], [Z_BA, Z_BB]])" -> This is upper triangle.
         # "M = M + M.conj().T" -> This makes it full.
         blocks[i][i] = D
         
-        if i + 1 < N_layers:
+        if i + 1 < n_layers:
             if i % 2 == 0:
                 blocks[i][i+1] = V_odd
             else:
                 blocks[i][i+1] = V_even
                 
-        if i + 2 < N_layers:
+        if i + 2 < n_layers:
             blocks[i][i+2] = W
             
     M = np.block(blocks)
@@ -283,49 +278,48 @@ def hamiltonian_LL(B, N_layers=3, Ncut=50, flip_valley=False, params=graphene_pa
                                  [Z_BA, delta_even_BB]])
                                  
     diags = []
-    for i in range(N_layers):
+    for i in range(n_layers):
         if i % 2 == 0:
             diags.append(delta_odd_block)
         else:
             diags.append(delta_even_block)
             
-    M_delta = sp.linalg.block_diag(*diags)
+    M_delta = jsp.linalg.block_diag(*diags)
     M += M_delta
 
     # Layer potential (U)
     if not np.isclose(U, 0.0):
-        M += np.kron(np.diag(np.linspace(U/2.0, -U/2.0, N_layers)), np.eye(d_layer))
+        M += np.kron(np.diag(np.linspace(U/2.0, -U/2.0, n_layers)), np.eye(d_layer))
 
     return M
 
-def get_hamiltonian(N_layers=2, params=graphene_params_BLG):
+def get_hamiltonian(n_layers: int = 2, params: dict = graphene_params_BLG):
     """
     Get the Hamiltonian function for N-layer Bernal (ABA) graphene.
 
     Args:
-        N_layers (int): Number of layers.
+        n_layers (int): Number of layers.
         params (dict): Dictionary of graphene parameters (gamma0, gamma1, etc.).
 
     Returns:
         function: A JIT-compiled function `h(kx, ky)` that returns the Hamiltonian matrix.
     """
-    h_func = partial(hamiltonian, N_layers=N_layers, params=params)
+    h_func = partial(hamiltonian, n_layers=n_layers, params=params)
     return h_func
 
-def get_hamiltonian_LL(N_layers=2, Ncut=50, flip_valley=False, params=graphene_params_BLG):
+def get_hamiltonian_LL(n_layers: int = 2, n_cut: int = 50, flip_valley: bool = False, params: dict = graphene_params_BLG):
     """
     Get the Landau Level Hamiltonian function for N-layer Bernal (ABA) graphene.
 
     Args:
-        N_layers (int): Number of layers.
-        Ncut (int): Cutoff for the number of Landau levels.
+        n_layers (int): Number of layers.
+        n_cut (int): Cutoff for the number of Landau levels.
         flip_valley (bool): If True, returns the Hamiltonian for the K' valley. Default is False (K valley).
         params (dict): Dictionary of graphene parameters.
 
     Returns:
         function: A function `h(B)` that returns the Hamiltonian matrix for a given magnetic field B.
     """
-    h_func = partial(hamiltonian_LL, N_layers=N_layers, Ncut=Ncut, flip_valley=flip_valley, params=params)
+    h_func = partial(hamiltonian_LL, n_layers=n_layers, n_cut=n_cut, flip_valley=flip_valley, params=params)
     return h_func
-
 

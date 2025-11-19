@@ -28,6 +28,11 @@ dev = [
     "pytest",
     "black"
 ]
+docs = [
+    "sphinx",
+    "sphinx_rtd_theme",
+    "myst-parser"
+]
 
 [tool.hatch.build.targets.wheel]
 sources = ["src"]

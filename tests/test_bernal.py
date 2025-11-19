@@ -15,28 +15,28 @@ class TestBernal(unittest.TestCase):
         self.params["U"] = 0.0
 
     def test_hamiltonian_shape_and_hermiticity(self):
-        N_layers = 4
-        h_func = bernal.get_hamiltonian(N_layers=N_layers, params=self.params)
+        n_layers = 4
+        h_func = bernal.get_hamiltonian(n_layers=n_layers, params=self.params)
         
         # Test at a generic k-point
         kx, ky = 0.1, -0.1
         h_mat = h_func(kx, ky)
         
-        self.assertEqual(h_mat.shape, (2*N_layers, 2*N_layers))
+        self.assertEqual(h_mat.shape, (2*n_layers, 2*n_layers))
         
         # Check hermiticity
         self.assertTrue(jnp.allclose(h_mat, h_mat.T.conj()), "Hamiltonian is not Hermitian")
 
     def test_hamiltonian_ll_shape_and_hermiticity(self):
-        N_layers = 4
-        Ncut = 15
-        h_ll_func = bernal.get_hamiltonian_LL(N_layers=N_layers, Ncut=Ncut, params=self.params)
+        n_layers = 4
+        n_cut = 15
+        h_ll_func = bernal.get_hamiltonian_LL(n_layers=n_layers, n_cut=n_cut, params=self.params)
         
         B = 5.0
         h_ll_mat = h_ll_func(B)
         
-        # Expected size: N_layers * (2*Ncut - 1)
-        expected_size = N_layers * (2*Ncut - 1)
+        # Expected size: n_layers * (2*n_cut - 1)
+        expected_size = n_layers * (2*n_cut - 1)
         self.assertEqual(h_ll_mat.shape, (expected_size, expected_size))
         
         # Check hermiticity

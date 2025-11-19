@@ -10,14 +10,28 @@ It includes functionality for both zero-field Hamiltonians and Landau Level (LL)
 
 ### `contimod_graphene.bernal`
 Provides Hamiltonians for Bernal-stacked (ABA) multilayer graphene.
-- `get_hamiltonian(N_layers, params)`: Returns a function for the zero-field Hamiltonian.
-- `get_hamiltonian_LL(N_layers, Ncut, flip_valley, params)`: Returns a function for the Landau Level Hamiltonian.
+- `get_hamiltonian(n_layers, params)`: Returns a function for the zero-field Hamiltonian.
+- `get_hamiltonian_LL(n_layers, n_cut, flip_valley, params)`: Returns a function for the Landau Level Hamiltonian.
 
 ### `contimod_graphene.rhombohedral`
 Provides Hamiltonians for Rhombohedral-stacked (ABC) multilayer graphene.
-- `get_hamiltonian(N_layers, params)`: Returns a function for the zero-field Hamiltonian.
-- `get_2band_hamiltonian(N_layers, params)`: Returns a function for the effective 2-band Hamiltonian.
-- `get_hamiltonian_LL(N_layers, Ncut, flip_valley, params)`: Returns a function for the Landau Level Hamiltonian.
+- `get_hamiltonian(n_layers, params)`: Returns a function for the zero-field Hamiltonian.
+- `get_2band_hamiltonian(n_layers, params)`: Returns a function for the effective 2-band Hamiltonian.
+- `get_hamiltonian_LL(n_layers, n_cut, flip_valley, params)`: Returns a function for the Landau Level Hamiltonian.
+
+### `contimod_graphene.params`
+Contains standard parameter sets for graphene tight-binding models.
+- `graphene_params`: Standard single-layer parameters.
+- `graphene_params_BLG`: Bilayer graphene parameters.
+- `graphene_params_TLG`: Trilayer graphene parameters.
+- `graphene_params_4LG`: 4-layer graphene parameters.
+
+### `contimod_graphene.utils`
+Helper functions for Hamiltonian construction.
+- `extract_params(params, keys)`: Extract specific parameters from a dictionary.
+- `layer_coordinates(n_layers)`: Get z-coordinates for layers.
+- `sublattice_coordinates(n_layers)`: Get sublattice indices.
+- `construct_ll_ops(N_A, N_B)`: Construct ladder operators for Landau Level calculations.
 
 ## Installation
 
@@ -46,7 +60,7 @@ If you are sure that you will not need to modify the package, then open the term
 ```bash
 pip install git+https://github.com/skilledwolf/contimod_graphene.git
 ```
-This will allow you to do `import contimod as cm` in your python code. You can uninstall the package with `pip uninstall contimod_graphene`.
+This will allow you to do `import contimod_graphene as cm_graphene` in your python code. You can uninstall the package with `pip uninstall contimod_graphene`.
 
 ### Option 3 (cross-platform)
 
@@ -65,4 +79,3 @@ While this is the fastest way to spin up a container, you can also containerize 
 
 ## Credit 
 This package is developed and maintained by Dr. Tobias Wolf. Feel free to contact us, and please give us credit if you use this work. 
-

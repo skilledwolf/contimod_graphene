@@ -5,8 +5,7 @@ This package provides Hamiltonian construction tools for multilayer graphene sys
 including Bernal (ABA) and Rhombohedral (ABC) stacking.
 """
 
-from .params import *
-
+from .params import graphene_params, graphene_params_TLG, graphene_params_BLG, graphene_params_4LG
+from . import params
 from . import rhombohedral
-
-from . import bernal 
+from . import bernal

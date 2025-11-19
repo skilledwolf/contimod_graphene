@@ -13,30 +13,30 @@ def extract_params(params, keys):
     """
     return [params.get(key, 0.0) for key in keys]
 
-def layer_coordinates(N_layers):
+def layer_coordinates(n_layers: int) -> np.ndarray:
     """
     Get the z-coordinates of the layers.
 
     Args:
-        N_layers (int): Number of layers.
+        n_layers (int): Number of layers.
 
     Returns:
         numpy.ndarray: Array of z-coordinates for each site (2 sites per layer).
     """
-    z_extent = N_layers * 0.335 # nm 
-    return np.repeat(np.linspace(-0.5, 0.5, N_layers), 2) if N_layers > 1 else np.array([0.0, 0.0])
+    z_extent = n_layers * 0.335 # nm 
+    return np.repeat(np.linspace(-0.5, 0.5, n_layers), 2) if n_layers > 1 else np.array([0.0, 0.0])
 
-def sublattice_coordinates(N_layers):
+def sublattice_coordinates(n_layers: int) -> np.ndarray:
     """
     Get the sublattice coordinates (0 or 1) for each site.
 
     Args:
-        N_layers (int): Number of layers.
+        n_layers (int): Number of layers.
 
     Returns:
         numpy.ndarray: Array of sublattice indices (0 for A, 1 for B) for each site.
     """
-    return np.tile([0.0, 1.0], N_layers) if N_layers > 1 else np.array([0.0, 1.0])
+    return np.tile([0.0, 1.0], n_layers) if n_layers > 1 else np.array([0.0, 1.0])
 
 def construct_ll_ops(N_A: int, N_B: int):
     """

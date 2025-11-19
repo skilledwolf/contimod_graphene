@@ -1,32 +1,28 @@
-from contimod.hamiltonian import ContinuumHamiltonian
-from contimod.utils import pauli, paulikron, matrix_basis
 import numpy as np
-import scipy as sp
-import jax; jax.config.update('jax_platform_name', 'cpu')
-jax.config.update("jax_enable_x64", True)
+import jax
 import jax.numpy as jnp
 import jax.scipy as jsp
 from functools import partial
 from contimod_graphene.utils import extract_params, layer_coordinates, sublattice_coordinates, construct_ll_ops
-from contimod_graphene.params import *
+from contimod_graphene.params import graphene_params_BLG
 
 ##############################################################################
 # General Multilayer Graphene
 ##############################################################################
 
-@partial(jax.jit, static_argnames=['N_layers'])
-def hamiltonian(kx, ky, N_layers=3, params=graphene_params_BLG):
+@partial(jax.jit, static_argnames=['n_layers'])
+def hamiltonian(kx: float, ky: float, n_layers: int = 3, params: dict = graphene_params_BLG) -> jnp.ndarray:
     """
     Construct the zero-field Hamiltonian for N-layer Rhombohedral (ABC) graphene.
 
     Args:
         kx (float): Momentum in x-direction.
         ky (float): Momentum in y-direction.
-        N_layers (int): Number of layers.
+        n_layers (int): Number of layers.
         params (dict): Dictionary of graphene parameters.
 
     Returns:
-        jax.numpy.ndarray: The Hamiltonian matrix of shape (2*N_layers, 2*N_layers).
+        jax.numpy.ndarray: The Hamiltonian matrix of shape (2*n_layers, 2*n_layers).
     """
     keys = ["gamma0", "gamma1", "gamma2", "gamma3", "gamma4", "U", "Delta", "delta"]
     gamma0, gamma1, gamma2, gamma3, gamma4, U, Delta, delta = extract_params(params, keys)
@@ -40,7 +36,7 @@ def hamiltonian(kx, ky, N_layers=3, params=graphene_params_BLG):
     D = jnp.array([[0, v * jnp.conj(pi)], 
                     [0, 0]])
 
-    if N_layers < 2:
+    if n_layers < 2:
         return D + D.T.conj()
 
     # Base Hamiltonian block for a multilayer system
@@ -50,28 +46,26 @@ def hamiltonian(kx, ky, N_layers=3, params=graphene_params_BLG):
                     [0, 0]])
 
     # Construct Hamiltonian
-    M = jnp.kron(jnp.eye(N_layers), D) + jnp.kron(jnp.diag(jnp.ones(N_layers - 1), k=1), V)
-    if N_layers > 2:
-        M += jnp.kron(jnp.diag(jnp.ones(N_layers - 2), k=2), W)
+    M = jnp.kron(jnp.eye(n_layers), D) + jnp.kron(jnp.diag(jnp.ones(n_layers - 1), k=1), V)
+    if n_layers > 2:
+        M += jnp.kron(jnp.diag(jnp.ones(n_layers - 2), k=2), W)
 
     M = M + M.conj().T
-    M = M + jnp.kron(jnp.diag(U*jnp.linspace(1/ 2, -1/ 2, N_layers)), jnp.eye(2))
+    M = M + jnp.kron(jnp.diag(U*jnp.linspace(1/ 2, -1/ 2, n_layers)), jnp.eye(2))
 
     return M
 
-@partial(jax.jit, static_argnames=['N_layers'])
-def hamiltonian_2bands(kx, ky, N_layers=3, params=graphene_params_BLG):
+@partial(jax.jit, static_argnames=['n_layers'])
+def hamiltonian_2bands(kx: float, ky: float, n_layers: int = 3, params: dict = graphene_params_BLG) -> jnp.ndarray:
     """
     Compute the effective two-band Hamiltonian for an N-layer ABC stacked graphene system
     following the projection method in Eq. (1) of arXiv:0906.4634.
 
     Parameters:
-      k : array-like
-          The momentum vector with components k[0] and k[1].
-      N : int
-          Number of layers in the ABC stack (N must be > 0).
-      params : dict
-          Dictionary of parameters including:
+      kx (float): Momentum in x-direction.
+      ky (float): Momentum in y-direction.
+      n_layers (int): Number of layers in the ABC stack (N must be > 0).
+      params (dict): Dictionary of parameters including:
             "gamma0", "gamma1", "gamma2", "gamma3", "gamma4", "U", "Delta", "delta"
 
     Returns:
@@ -99,13 +93,13 @@ def hamiltonian_2bands(kx, ky, N_layers=3, params=graphene_params_BLG):
                    [0,                0         ]])
     
     # Build the full (2N x 2N) Hamiltonian matrix.
-    M = jnp.kron(jnp.eye(N_layers), D) + jnp.kron(jnp.diag(jnp.ones(N_layers - 1), k=1), V)
-    if N_layers > 2:
-        M = M + jnp.kron(jnp.diag(jnp.ones(N_layers - 2), k=2), W)
+    M = jnp.kron(jnp.eye(n_layers), D) + jnp.kron(jnp.diag(jnp.ones(n_layers - 1), k=1), V)
+    if n_layers > 2:
+        M = M + jnp.kron(jnp.diag(jnp.ones(n_layers - 2), k=2), W)
     M = M + M.conj().T  # Ensure M is Hermitian.
     
     # Add a potential term if U is nonzero.
-    M = M + jnp.kron(jnp.diag(jnp.linspace(U/2, -U/2, N_layers)), jnp.eye(2))
+    M = M + jnp.kron(jnp.diag(jnp.linspace(U/2, -U/2, n_layers)), jnp.eye(2))
     
     # Project out the internal layers.
     # H11 corresponds to the (1,1) block from the first and last layers.
@@ -131,24 +125,24 @@ def hamiltonian_2bands(kx, ky, N_layers=3, params=graphene_params_BLG):
     # Return the renormalized effective 2x2 Hamiltonian.
     return S.T.conj() @ H0 @ S
 
-def hamiltonian_LL(B, N_layers=3, Ncut=50, flip_valley=False, params=graphene_params_BLG):
+def hamiltonian_LL(B: float, n_layers: int = 3, n_cut: int = 50, flip_valley: bool = False, params: dict = graphene_params_BLG) -> np.ndarray:
     """
     Multilayer (ABC) graphene Landau-level Hamiltonian in an asymmetric LL basis
     that removes unphysical LLs by using different numbers of LLs on the two
-    sublattices. For valley K we use (N_B, N_A) = (Ncut, Ncut-1); for K' we swap.
+    sublattices. For valley K we use (N_B, N_A) = (n_cut, n_cut-1); for K' we swap.
 
     Args:
       B: magnetic field [T]
-      N_layers: number of layers
-      Ncut: LL cutoff on the sublattice that hosts the n=0 mode
+      n_layers: number of layers
+      n_cut: LL cutoff on the sublattice that hosts the n=0 mode
       flip_valley: if True, build K' (swap sublattices + sign switches)
       params: dict with keys "gamma0", "gamma1", "gamma2", "gamma3", "gamma4", "U"
     Returns:
-      Dense numpy array of shape (N_layers*(2*Ncut-1), N_layers*(2*Ncut-1))
+      Dense numpy array of shape (n_layers*(2*n_cut-1), n_layers*(2*n_cut-1))
     """
 
-    if Ncut < 2:
-        raise ValueError("Ncut must be >= 2 for a meaningful asymmetric LL basis.")
+    if n_cut < 2:
+        raise ValueError("n_cut must be >= 2 for a meaningful asymmetric LL basis.")
 
     # magnetic length [Å]
     l_B = 104.29 / np.sqrt(B)
@@ -164,12 +158,12 @@ def hamiltonian_LL(B, N_layers=3, Ncut=50, flip_valley=False, params=graphene_pa
     U   = p("U")
 
     # Choose LL dimensions per valley:
-    # K valley: zero mode on B    -> (N_B, N_A) = (Ncut,   Ncut-1)
-    # K' valley: zero mode on A   -> (N_B, N_A) = (Ncut-1, Ncut)
+    # K valley: zero mode on B    -> (N_B, N_A) = (n_cut,   n_cut-1)
+    # K' valley: zero mode on A   -> (N_B, N_A) = (n_cut-1, n_cut)
     if not flip_valley:
-        N_A, N_B = Ncut - 1, Ncut
+        N_A, N_B = n_cut - 1, n_cut
     else:
-        N_A, N_B = Ncut, Ncut - 1
+        N_A, N_B = n_cut, n_cut - 1
 
     ops = construct_ll_ops(N_A, N_B)
 
@@ -208,63 +202,61 @@ def hamiltonian_LL(B, N_layers=3, Ncut=50, flip_valley=False, params=graphene_pa
 
     # ---------- assemble multilayer Hamiltonian ----------
     d_layer = N_A + N_B
-    M = np.kron(np.eye(N_layers), D)
-    if N_layers > 1:
-        M += np.kron(np.diag(np.ones(N_layers - 1), k=1), V)
-    if N_layers > 2:
-        M += np.kron(np.diag(np.ones(N_layers - 2), k=2), W)
+    M = np.kron(np.eye(n_layers), D)
+    if n_layers > 1:
+        M += np.kron(np.diag(np.ones(n_layers - 1), k=1), V)
+    if n_layers > 2:
+        M += np.kron(np.diag(np.ones(n_layers - 2), k=2), W)
 
     # Hermitize (adds the BA block and interlayer lower-diagonal blocks)
     M = M + M.conj().T
 
     # Layer potential (U) distributed linearly across layers, same on both sublattices
     if not np.isclose(U, 0.0):
-        M += np.kron(np.diag(np.linspace(U/2.0, -U/2.0, N_layers)), np.eye(d_layer))
+        M += np.kron(np.diag(np.linspace(U/2.0, -U/2.0, n_layers)), np.eye(d_layer))
 
     return M
 
-def get_hamiltonian(N_layers=2, params=graphene_params_BLG):
+def get_hamiltonian(n_layers: int = 2, params: dict = graphene_params_BLG):
     """
     Get the Hamiltonian function for N-layer Rhombohedral (ABC) graphene.
 
     Args:
-        N_layers (int): Number of layers.
+        n_layers (int): Number of layers.
         params (dict): Dictionary of graphene parameters.
 
     Returns:
         function: A JIT-compiled function `h(kx, ky)` that returns the Hamiltonian matrix.
     """
-    h_func = partial(hamiltonian, N_layers=N_layers, params=params)
+    h_func = partial(hamiltonian, n_layers=n_layers, params=params)
     return h_func
 
-def get_2band_hamiltonian(N_layers=2, params=graphene_params_BLG):
+def get_2band_hamiltonian(n_layers: int = 2, params: dict = graphene_params_BLG):
     """
     Get the effective 2-band Hamiltonian function for N-layer Rhombohedral (ABC) graphene.
 
     Args:
-        N_layers (int): Number of layers.
+        n_layers (int): Number of layers.
         params (dict): Dictionary of graphene parameters.
 
     Returns:
         function: A JIT-compiled function `h(kx, ky)` that returns the 2x2 effective Hamiltonian matrix.
     """
-    h_func = partial(hamiltonian_2bands, N_layers=N_layers, params=params)
+    h_func = partial(hamiltonian_2bands, n_layers=n_layers, params=params)
     return h_func
 
-def get_hamiltonian_LL(N_layers=2, Ncut=50, flip_valley=False, params=graphene_params_BLG):
+def get_hamiltonian_LL(n_layers: int = 2, n_cut: int = 50, flip_valley: bool = False, params: dict = graphene_params_BLG):
     """
     Get the Landau Level Hamiltonian function for N-layer Rhombohedral (ABC) graphene.
 
     Args:
-        N_layers (int): Number of layers.
-        Ncut (int): Cutoff for the number of Landau levels.
+        n_layers (int): Number of layers.
+        n_cut (int): Cutoff for the number of Landau levels.
         flip_valley (bool): If True, returns the Hamiltonian for the K' valley. Default is False (K valley).
         params (dict): Dictionary of graphene parameters.
 
     Returns:
         function: A function `h(B)` that returns the Hamiltonian matrix for a given magnetic field B.
     """
-    h_func = partial(hamiltonian_LL, N_layers=N_layers, Ncut=Ncut, flip_valley=flip_valley, params=params)
+    h_func = partial(hamiltonian_LL, n_layers=n_layers, n_cut=n_cut, flip_valley=flip_valley, params=params)
     return h_func
-
-
