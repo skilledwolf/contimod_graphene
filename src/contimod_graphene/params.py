@@ -1,50 +1,49 @@
-"""
-Standard parameters for graphene tight-binding models.
+"""Parameter management for graphene models (JSON-backed)."""
 
-Energies are in milli-electron volts (meV).
-"""
+from __future__ import annotations
 
-graphene_params = {
-    "gamma0": 3160,
-    "gamma1": 381,
-    "gamma2": -15,
-    "gamma3": 380,
-    "gamma4": 140,
-    "U": 50.0,
-    "delta": 0.0,
-    "Delta": 0.0,
-}
+import json
+from pathlib import Path
+from typing import Any, Dict
 
-graphene_params_TLG = {
-    "gamma0": 3160,
-    "gamma1": 380,
-    "gamma2": -15,
-    "gamma3": -290,
-    "gamma4": 141,
-    "U": 30.0,
-    "delta": -10.5/2,
-    "Delta": -2.3/2,
-}
+_HERE = Path(__file__).resolve().parent
+_DEFAULT_JSON = (_HERE.parent.parent / "data" / "params.json").resolve()
 
-graphene_params_BLG = {
-    "gamma0": 3160,
-    "gamma1": 380,
-    "gamma2": -15,
-    "gamma3": -283,
-    "gamma4": 138,
-    "U": 0.0,
-    "Delta": 0,
-    "delta": 15
-}
+with _DEFAULT_JSON.open() as f:
+    _DATA = json.load(f)
 
-graphene_params_4LG = {
-    "gamma0": 3160,
-    "gamma1": 380,
-    "gamma2": -15,
-    "gamma3": -290,
-    "gamma4": 141,
-    "gamma5": 40,
-    "U": 0.0,
-    "Delta": 0.0,
-    "delta": 40.8,
-}
+_ALIASES = {**_DATA.get("aliases", {})}
+
+graphene_params = _DATA["sets"]["slg"]
+graphene_params_BLG = _DATA["sets"]["blg"]
+graphene_params_TLG = _DATA["sets"]["tlg"]
+graphene_params_4LG = _DATA["sets"]["4lg"]
+
+
+def _resolve_kind(kind: str) -> str:
+    key = kind.lower()
+    if key in _DATA["sets"]:
+        return key
+    if key in _ALIASES:
+        return _ALIASES[key]
+    raise KeyError(f"Unknown graphene parameter set '{kind}'")
+
+
+def get_params(kind: str | Dict[str, Any]) -> dict:
+    """Return params by name (or pass-through dict). Accepts JSON path too."""
+    if isinstance(kind, dict):
+        return dict(kind)
+    if Path(str(kind)).exists():
+        return load(str(kind))
+    key = _resolve_kind(str(kind))
+    return dict(_DATA["sets"][key])
+
+
+def load(path: str) -> dict:
+    """Load a parameter dictionary from JSON file."""
+    with open(path, "r") as f:
+        return json.load(f)
+
+
+def list_sets():
+    return list(_DATA["sets"].keys())

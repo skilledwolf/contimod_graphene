@@ -91,3 +91,21 @@ def construct_ll_ops(N_A: int, N_B: int):
         a_BA=a_BA, adag_BA=adag_BA, a_AB=a_AB, adag_AB=adag_AB,
         I_AB=I_AB, I_BA=I_BA
     )
+
+
+# Simple batching helper used by contimod wrappers
+import jax
+import jax.numpy as jnp
+
+
+def batch_hamiltonian(h_fn, *, jit: bool = True):
+    """Vectorize a single-k Hamiltonian callable over k-arrays (last dim = 2)."""
+
+    def _batched(ks):
+        ks = jnp.asarray(ks)
+        orig_shape = ks.shape[:-1]
+        ks_flat = ks.reshape((-1, ks.shape[-1]))
+        out = jax.vmap(h_fn)(ks_flat)
+        return out.reshape(orig_shape + out.shape[1:])
+
+    return jax.jit(_batched) if jit else _batched

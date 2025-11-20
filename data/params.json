@@ -1,0 +1,56 @@
+{
+  "units": "meV",
+  "sets": {
+    "slg": {
+      "gamma0": 3160,
+      "gamma1": 381,
+      "gamma2": -15,
+      "gamma3": 380,
+      "gamma4": 140,
+      "U": 50.0,
+      "delta": 0.0,
+      "Delta": 0.0
+    },
+    "blg": {
+      "gamma0": 3160,
+      "gamma1": 380,
+      "gamma2": -15,
+      "gamma3": -283,
+      "gamma4": 138,
+      "U": 0.0,
+      "Delta": 0,
+      "delta": 15
+    },
+    "tlg": {
+      "gamma0": 3160,
+      "gamma1": 380,
+      "gamma2": -15,
+      "gamma3": -290,
+      "gamma4": 141,
+      "U": 30.0,
+      "delta": -5.25,
+      "Delta": -1.15
+    },
+    "4lg": {
+      "gamma0": 3160,
+      "gamma1": 380,
+      "gamma2": -15,
+      "gamma3": -290,
+      "gamma4": 141,
+      "gamma5": 40,
+      "U": 0.0,
+      "Delta": 0.0,
+      "delta": 40.8
+    }
+  },
+  "aliases": {
+    "single": "slg",
+    "monolayer": "slg",
+    "abc": "tlg",
+    "aba": "tlg",
+    "trilayer": "tlg",
+    "tetralayer": "4lg",
+    "ab": "blg",
+    "bilayer": "blg"
+  }
+}

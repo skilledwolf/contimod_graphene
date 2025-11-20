@@ -323,3 +323,44 @@ def get_hamiltonian_LL(n_layers: int = 2, n_cut: int = 50, flip_valley: bool = F
     h_func = partial(hamiltonian_LL, n_layers=n_layers, n_cut=n_cut, flip_valley=flip_valley, params=params)
     return h_func
 
+@partial(jax.jit, static_argnames=[])
+def hamiltonian_2bands(kx: float, ky: float, params: dict = graphene_params_BLG) -> jnp.ndarray:
+    """
+    Compute the effective two-band Hamiltonian for Bilayer Graphene (Bernal).
+    See Eq 30 in https://arxiv.org/pdf/1205.6953.pdf
+
+    Args:
+        kx (float): Momentum in x-direction.
+        ky (float): Momentum in y-direction.
+        params (dict): Dictionary of graphene parameters.
+
+    Returns:
+        jax.numpy.ndarray: The Hamiltonian matrix of shape (2, 2).
+    """
+    keys = ["gamma0", "gamma1", "gamma2", "gamma3", "gamma4", "U", "Delta", "delta"]
+    gamma0, gamma1, gamma2, gamma3, gamma4, U, Delta, delta = extract_params(params, keys)
+
+    delta_prime = delta
+    delta_AB = Delta
+    v = jnp.sqrt(3)*gamma0/2  # in units of hbar/a
+    v3 = jnp.sqrt(3)*gamma3/2  # in units of hbar/a
+    v4 = jnp.sqrt(3)*gamma4/2  # in units of hbar/a
+
+    # Assuming K valley (xi=1) for the base function. 
+    # If xi=-1, caller should pass -kx.
+    pi = kx + 1j * ky
+
+    t      = (-v**2/gamma1 - v3/(4*jnp.sqrt(3))) * pi**2 + v3 * jnp.conj(pi)
+    u_symm = (2*v*v4/gamma1 + delta_prime * v**2/gamma1**2) * jnp.abs(pi)**2
+    u_asym = -U/2 * (1- 2*v**2/gamma1**2 * jnp.abs(pi)**2) + delta_AB/2
+
+    M = jnp.array([
+        [u_symm + u_asym,  jnp.conj(t)],
+        [t,                u_symm - u_asym]
+    ])
+
+    return M
+
+def get_hamiltonian_2bands(params: dict = graphene_params_BLG):
+    h_func = partial(hamiltonian_2bands, params=params)
+    return h_func

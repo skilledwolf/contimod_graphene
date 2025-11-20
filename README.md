@@ -20,11 +20,10 @@ Provides Hamiltonians for Rhombohedral-stacked (ABC) multilayer graphene.
 - `get_hamiltonian_LL(n_layers, n_cut, flip_valley, params)`: Returns a function for the Landau Level Hamiltonian.
 
 ### `contimod_graphene.params`
-Contains standard parameter sets for graphene tight-binding models.
-- `graphene_params`: Standard single-layer parameters.
-- `graphene_params_BLG`: Bilayer graphene parameters.
-- `graphene_params_TLG`: Trilayer graphene parameters.
-- `graphene_params_4LG`: 4-layer graphene parameters.
+JSON-backed parameter sets for graphene tight-binding models (see `data/params.json`).
+- `get_params(kind_or_dict)`: Return params by preset name/alias (e.g., `"slg"`, `"blg"`, `"tlg"`, `"4lg"`), a JSON file path, or pass through a dict.
+- `load(path)`: Load params from a JSON file.
+- `list_sets()`: List available presets.
 
 ### `contimod_graphene.utils`
 Helper functions for Hamiltonian construction.
@@ -32,6 +31,10 @@ Helper functions for Hamiltonian construction.
 - `layer_coordinates(n_layers)`: Get z-coordinates for layers.
 - `sublattice_coordinates(n_layers)`: Get sublattice indices.
 - `construct_ll_ops(N_A, N_B)`: Construct ladder operators for Landau Level calculations.
+- `batch_hamiltonian(h_fn, jit=True)`: Vectorize a single-k Hamiltonian over an array of k-points.
+
+### `contimod_graphene.basis`
+Basis helpers (layer/sublattice coordinates and operator construction) used by downstream wrappers.
 
 ## Installation
 
