@@ -179,6 +179,21 @@ def bernal_trilayer_mirror_projectors(
     return np.asarray(odd, dtype=dtype), np.asarray(even, dtype=dtype)
 
 
+def bernal_trilayer_mirror_operator(
+    dtype: type[np.complexfloating] | type[np.floating] | type[np.bool_] = complex,
+) -> np.ndarray:
+    """Return the ABA-trilayer mirror operator in the site basis.
+
+    In the canonical zero-field basis `(A1, B1, A2, B2, A3, B3)`, this operator
+    exchanges the outer layers while leaving the middle layer fixed. It is
+    reconstructed from the odd/even mirror projectors so it stays consistent with
+    `bernal_trilayer_mirror_unitary`.
+    """
+    odd, even = bernal_trilayer_mirror_projectors(dtype=complex)
+    mirror = np.real_if_close(even - odd, tol=1000)
+    return np.asarray(mirror, dtype=dtype)
+
+
 def rhombohedral_outer_site_indices(n_layers: int) -> tuple[int, int]:
     """Return the zero-field low-energy site indices `(A1, B_N)` for ABC stacks."""
     n_layers = _validate_n_layers(n_layers)
@@ -255,6 +270,7 @@ __all__ = [
     "PAULI",
     "bernal_dimer_mask",
     "bernal_nondimer_mask",
+    "bernal_trilayer_mirror_operator",
     "bernal_trilayer_mirror_projectors",
     "bernal_trilayer_mirror_unitary",
     "build_ops",

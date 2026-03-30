@@ -50,6 +50,10 @@ def _aba_trilayer_params(*, U: float = 0.0) -> cg.GrapheneTBParameters:
     )
 
 
+def _clean_aba_trilayer_params() -> cg.GrapheneTBParameters:
+    return _clean_bernal_bilayer_params()
+
+
 def _delta_bernal_bilayer_params(Delta: float = 20.0) -> cg.GrapheneTBParameters:
     return _clean_bernal_bilayer_params().replace(Delta=Delta)
 
@@ -84,15 +88,33 @@ def test_zero_field_basis_helpers_expose_named_site_metadata():
     )
 
     mirror_unitary = cg.basis.bernal_trilayer_mirror_unitary()
+    mirror_operator = cg.basis.bernal_trilayer_mirror_operator(dtype=float)
     odd_projector, even_projector = cg.basis.bernal_trilayer_mirror_projectors()
 
     assert mirror_unitary.shape == (6, 6)
+    np.testing.assert_allclose(
+        mirror_operator,
+        np.array(
+            [
+                [0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+                [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+            ]
+        ),
+        atol=1e-12,
+        rtol=1e-12,
+    )
+    np.testing.assert_allclose(mirror_operator @ mirror_operator, np.eye(6), atol=1e-12, rtol=1e-12)
     np.testing.assert_allclose(
         mirror_unitary.conj().T @ mirror_unitary,
         np.eye(6),
         atol=1e-12,
         rtol=1e-12,
     )
+    np.testing.assert_allclose(mirror_operator, even_projector - odd_projector, atol=1e-12, rtol=1e-12)
     np.testing.assert_allclose(odd_projector @ odd_projector, odd_projector, atol=1e-12, rtol=1e-12)
     np.testing.assert_allclose(even_projector @ even_projector, even_projector, atol=1e-12, rtol=1e-12)
     np.testing.assert_allclose(odd_projector @ even_projector, np.zeros((6, 6)), atol=1e-12, rtol=1e-12)
@@ -209,6 +231,42 @@ def test_aba_trilayer_mirror_parity_blocks_decouple_and_u_breaks_them():
         h_biased = np.asarray(biased_model.hamiltonian(kx, ky))
         biased_coupling = odd_projector @ h_biased @ even_projector
         assert np.linalg.norm(biased_coupling) > 1e-6
+
+
+def test_aba_trilayer_clean_mirror_sectors_match_monolayer_and_bilayer_spectra():
+    params = _clean_aba_trilayer_params()
+    model = cg.BernalMultilayer(n_layers=3, params=params)
+    mirror_unitary = cg.basis.bernal_trilayer_mirror_unitary()
+
+    velocity = np.sqrt(3.0) * float(params["gamma0"]) / 2.0
+    gamma1_eff = np.sqrt(2.0) * float(params["gamma1"])
+
+    for kx, ky in ((1e-5, 0.0), (1e-3, 0.0), (1e-2, 2e-2)):
+        h_mirror = mirror_unitary.conj().T @ np.asarray(model.hamiltonian(kx, ky)) @ mirror_unitary
+
+        odd_block = h_mirror[:2, :2]
+        even_evals = np.linalg.eigvalsh(h_mirror[2:, 2:])
+
+        pi = kx + 1j * ky
+        expected_odd = np.array(
+            [
+                [0.0, velocity * np.conj(pi)],
+                [velocity * pi, 0.0],
+            ],
+            dtype=complex,
+        )
+        rho = np.sqrt(gamma1_eff**2 + 4.0 * (velocity * np.abs(pi)) ** 2)
+        expected_even = np.array(
+            [
+                -0.5 * (rho + gamma1_eff),
+                -0.5 * (rho - gamma1_eff),
+                0.5 * (rho - gamma1_eff),
+                0.5 * (rho + gamma1_eff),
+            ]
+        )
+
+        np.testing.assert_allclose(odd_block, expected_odd, atol=3e-6, rtol=1e-10)
+        np.testing.assert_allclose(even_evals, expected_even, atol=2e-6, rtol=1e-10)
 
 
 @pytest.mark.parametrize(("n_layers", "preset"), [(3, "tlg"), (4, "4lg")])
