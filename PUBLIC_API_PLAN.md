@@ -13,6 +13,7 @@ This document captures the recommended first implementation pass for turning `co
 - Do not move many-body workflows here from `contimod`.
 - Do not hide the low-level kernel modules entirely; advanced users may still want them.
 - Do not add large optional dependencies unless they unlock a clearly intended package surface.
+- Do not add compatibility shims solely to preserve stale `contimod` call sites once the new public API is ready.
 
 ## Recommended Public API
 
@@ -178,7 +179,19 @@ Recommended validation behavior:
 3. Implement `GrapheneTBParameters` in `params.py` while preserving existing preset-loading behavior.
 4. Implement `BernalMultilayer` / `RhombohedralMultilayer` in `models.py` as thin wrappers over the existing kernels.
 5. Export the new surface from `__init__.py` and update README/examples to use it.
-6. Add focused tests for the new public API and parameter semantics.
+6. Migrate `/Users/wolft/Dev/contimod` to the new surface in the same unit of work rather than carrying compatibility shims in `contimod_graphene`.
+7. Add focused tests for the new public API and parameter semantics, plus downstream smoke coverage where practical.
+
+## Downstream Migration Policy
+
+`contimod` is currently the main downstream consumer of `contimod_graphene`.
+
+That means API work here should follow this policy:
+- change `contimod_graphene`
+- update `contimod` usage promptly in the same unit of work
+- avoid introducing legacy shims in `contimod_graphene` just to preserve old `contimod` call patterns
+
+If an API change would make `contimod` migration unusually large, document the split clearly in `Roadmap.md` before leaving the work half-finished.
 
 ## Validation Expectations
 - import-level smoke tests for the new public API

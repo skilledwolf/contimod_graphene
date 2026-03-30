@@ -22,6 +22,7 @@
 - Treat the worktree as potentially dirty. Never overwrite or revert unrelated user changes.
 - If you discover a bug, cleanup item, packaging issue, API mismatch, missing validation, or doc gap, add it to `Roadmap.md` immediately instead of leaving it in scratch notes.
 - If you work on the standalone public API or parameter-management surface, read `PUBLIC_API_PLAN.md` first and keep it aligned with any implementation decisions you make.
+- If you change the public API or parameter-management surface here, update usage in `/Users/wolft/Dev/contimod` in the same unit of work. Do not add legacy compatibility shims just to preserve the old `contimod` call sites; `contimod` is the main downstream consumer and should be migrated directly.
 - When you start a task, update its status in `Roadmap.md`.
 - When you finish, block, split, supersede, add, or remove task entries as appropriate in the same unit of work.
 - Keep task notes concrete: affected paths, expected validation, and follow-up work that remains.
@@ -41,5 +42,6 @@
 ## Near-Term Direction
 - Strengthen the package as a standalone graphene-model library that can be used directly, with `contimod` treated as one downstream consumer rather than the package's reason for existence.
 - Use the concrete API and parameter-management direction in `PUBLIC_API_PLAN.md` as the default starting point unless a better replacement is written down in the repo.
+- Keep `contimod` synchronized with API changes here by migrating its usage rather than protecting stale call patterns with shim layers.
 - Keep docs/examples usable without assuming `contimod`, except where a document is explicitly about downstream integration.
 - Be conservative about adding optional dependencies: they should unlock a clear surface such as BZ/path helpers, plotting helpers, or symmetry classification.
