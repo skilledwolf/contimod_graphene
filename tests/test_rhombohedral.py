@@ -4,14 +4,14 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from contimod_graphene import rhombohedral
-from contimod_graphene.params import graphene_params_BLG
+from contimod_graphene.params import graphene_params_TLG
 
 # Enable x64 for precision checks
 jax.config.update("jax_enable_x64", True)
 
 class TestRhombohedral(unittest.TestCase):
     def setUp(self):
-        self.params = dict(graphene_params_BLG)
+        self.params = dict(graphene_params_TLG)
         self.params["U"] = 0.0
 
     def test_hamiltonian_shape_and_hermiticity(self):
@@ -51,6 +51,35 @@ class TestRhombohedral(unittest.TestCase):
         
         self.assertEqual(h_2band.shape, (2, 2))
         self.assertTrue(jnp.allclose(h_2band, h_2band.T.conj()), "2-band Hamiltonian is not Hermitian")
+
+    def test_default_zero_field_surface_uses_tlg_preset(self):
+        kx, ky = 0.07, -0.03
+        h_default = rhombohedral.hamiltonian(kx, ky)
+        h_explicit = rhombohedral.hamiltonian(kx, ky, n_layers=3, params=graphene_params_TLG)
+        self.assertTrue(jnp.allclose(h_default, h_explicit))
+
+    def test_default_getters_target_trilayer_abc(self):
+        kx, ky = 0.02, 0.01
+
+        h_default = rhombohedral.get_hamiltonian()(kx, ky)
+        h_explicit = rhombohedral.get_hamiltonian(n_layers=3, params=graphene_params_TLG)(kx, ky)
+        self.assertEqual(h_default.shape, (6, 6))
+        self.assertTrue(jnp.allclose(h_default, h_explicit))
+
+        h2_default = rhombohedral.get_2band_hamiltonian()(kx, ky)
+        h2_explicit = rhombohedral.get_2band_hamiltonian(n_layers=3, params=graphene_params_TLG)(kx, ky)
+        self.assertEqual(h2_default.shape, (2, 2))
+        self.assertTrue(jnp.allclose(h2_default, h2_explicit))
+
+    def test_default_ll_surface_uses_tlg_preset(self):
+        h_ll_default = rhombohedral.get_hamiltonian_LL(n_cut=8)(10.0)
+        h_ll_explicit = rhombohedral.get_hamiltonian_LL(
+            n_layers=3,
+            n_cut=8,
+            params=graphene_params_TLG,
+        )(10.0)
+        self.assertEqual(h_ll_default.shape, (45, 45))
+        self.assertTrue(np.allclose(h_ll_default, h_ll_explicit))
 
 if __name__ == '__main__':
     unittest.main()

@@ -61,6 +61,8 @@ The following figure shows a typical LL fan for bilayer graphene:
 
 **Example: LL fan for bilayer graphene**
 
+For `n_layers=2`, the Bernal and rhombohedral kernels describe the same AB bilayer connectivity, so using the rhombohedral LL helper with the BLG preset here is intentional.
+
 ```python
 import jax
 import jax.numpy as jnp

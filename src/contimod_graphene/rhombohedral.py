@@ -4,14 +4,14 @@ import jax.numpy as jnp
 import jax.scipy as jsp
 from functools import partial
 from contimod_graphene.utils import extract_params, layer_coordinates, sublattice_coordinates, construct_ll_ops
-from contimod_graphene.params import graphene_params_BLG
+from contimod_graphene.params import graphene_params_TLG
 
 ##############################################################################
-# General Multilayer Graphene
+# General Rhombohedral / ABC Multilayer Graphene
 ##############################################################################
 
 @partial(jax.jit, static_argnames=['n_layers'])
-def hamiltonian(kx: float, ky: float, n_layers: int = 3, params: dict = graphene_params_BLG) -> jnp.ndarray:
+def hamiltonian(kx: float, ky: float, n_layers: int = 3, params: dict = graphene_params_TLG) -> jnp.ndarray:
     """
     Construct the zero-field Hamiltonian for N-layer Rhombohedral (ABC) graphene.
 
@@ -56,7 +56,7 @@ def hamiltonian(kx: float, ky: float, n_layers: int = 3, params: dict = graphene
     return M
 
 @partial(jax.jit, static_argnames=['n_layers'])
-def hamiltonian_2bands(kx: float, ky: float, n_layers: int = 3, params: dict = graphene_params_BLG) -> jnp.ndarray:
+def hamiltonian_2bands(kx: float, ky: float, n_layers: int = 3, params: dict = graphene_params_TLG) -> jnp.ndarray:
     """
     Compute the effective two-band Hamiltonian for an N-layer ABC stacked graphene system
     following the projection method in Eq. (1) of arXiv:0906.4634.
@@ -125,7 +125,7 @@ def hamiltonian_2bands(kx: float, ky: float, n_layers: int = 3, params: dict = g
     # Return the renormalized effective 2x2 Hamiltonian.
     return S.T.conj() @ H0 @ S
 
-def hamiltonian_LL(B: float, n_layers: int = 3, n_cut: int = 50, flip_valley: bool = False, params: dict = graphene_params_BLG) -> np.ndarray:
+def hamiltonian_LL(B: float, n_layers: int = 3, n_cut: int = 50, flip_valley: bool = False, params: dict = graphene_params_TLG) -> np.ndarray:
     """
     Multilayer (ABC) graphene Landau-level Hamiltonian in an asymmetric LL basis
     that removes unphysical LLs by using different numbers of LLs on the two
@@ -217,13 +217,13 @@ def hamiltonian_LL(B: float, n_layers: int = 3, n_cut: int = 50, flip_valley: bo
 
     return M
 
-def get_hamiltonian(n_layers: int = 2, params: dict = graphene_params_BLG):
+def get_hamiltonian(n_layers: int = 3, params: dict = graphene_params_TLG):
     """
     Get the Hamiltonian function for N-layer Rhombohedral (ABC) graphene.
 
     Args:
-        n_layers (int): Number of layers.
-        params (dict): Dictionary of graphene parameters.
+        n_layers (int): Number of layers. Defaults to the trilayer ABC entry point.
+        params (dict): Dictionary of graphene parameters. Defaults to the ABC/TLG preset.
 
     Returns:
         function: A JIT-compiled function `h(kx, ky)` that returns the Hamiltonian matrix.
@@ -231,13 +231,13 @@ def get_hamiltonian(n_layers: int = 2, params: dict = graphene_params_BLG):
     h_func = partial(hamiltonian, n_layers=n_layers, params=params)
     return h_func
 
-def get_2band_hamiltonian(n_layers: int = 2, params: dict = graphene_params_BLG):
+def get_2band_hamiltonian(n_layers: int = 3, params: dict = graphene_params_TLG):
     """
     Get the effective 2-band Hamiltonian function for N-layer Rhombohedral (ABC) graphene.
 
     Args:
-        n_layers (int): Number of layers.
-        params (dict): Dictionary of graphene parameters.
+        n_layers (int): Number of layers. Defaults to the trilayer ABC entry point.
+        params (dict): Dictionary of graphene parameters. Defaults to the ABC/TLG preset.
 
     Returns:
         function: A JIT-compiled function `h(kx, ky)` that returns the 2x2 effective Hamiltonian matrix.
@@ -245,15 +245,15 @@ def get_2band_hamiltonian(n_layers: int = 2, params: dict = graphene_params_BLG)
     h_func = partial(hamiltonian_2bands, n_layers=n_layers, params=params)
     return h_func
 
-def get_hamiltonian_LL(n_layers: int = 2, n_cut: int = 50, flip_valley: bool = False, params: dict = graphene_params_BLG):
+def get_hamiltonian_LL(n_layers: int = 3, n_cut: int = 50, flip_valley: bool = False, params: dict = graphene_params_TLG):
     """
     Get the Landau Level Hamiltonian function for N-layer Rhombohedral (ABC) graphene.
 
     Args:
-        n_layers (int): Number of layers.
+        n_layers (int): Number of layers. Defaults to the trilayer ABC entry point.
         n_cut (int): Cutoff for the number of Landau levels.
         flip_valley (bool): If True, returns the Hamiltonian for the K' valley. Default is False (K valley).
-        params (dict): Dictionary of graphene parameters.
+        params (dict): Dictionary of graphene parameters. Defaults to the ABC/TLG preset.
 
     Returns:
         function: A function `h(B)` that returns the Hamiltonian matrix for a given magnetic field B.

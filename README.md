@@ -28,9 +28,9 @@ Provides Hamiltonians for Bernal-stacked (ABA) multilayer graphene.
 
 ### `contimod_graphene.rhombohedral`
 Provides Hamiltonians for Rhombohedral-stacked (ABC) multilayer graphene.
-- `get_hamiltonian(n_layers, params)`: Returns a function for the zero-field Hamiltonian.
-- `get_2band_hamiltonian(n_layers, params)`: Returns a function for the effective 2-band Hamiltonian.
-- `get_hamiltonian_LL(n_layers, n_cut, flip_valley, params)`: Returns a function for the Landau Level Hamiltonian.
+- `get_hamiltonian(n_layers, params)`: Returns a function for the zero-field Hamiltonian. If omitted, defaults target the ABC trilayer preset.
+- `get_2band_hamiltonian(n_layers, params)`: Returns a function for the effective 2-band Hamiltonian. If omitted, defaults target the ABC trilayer preset.
+- `get_hamiltonian_LL(n_layers, n_cut, flip_valley, params)`: Returns a function for the Landau Level Hamiltonian. If omitted, defaults target the ABC trilayer preset.
 
 ### `contimod_graphene.params`
 JSON-backed parameter sets for graphene tight-binding models (see `data/params.json`).

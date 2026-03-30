@@ -41,6 +41,9 @@ from contimod_graphene.params import graphene_params_TLG
 n_layers = 3
 params = graphene_params_TLG
 
+# If you omit `params`, the rhombohedral convenience wrappers default to
+# the ABC trilayer preset.
+
 # 2. Get the Hamiltonian function
 h_func = rhombohedral.get_hamiltonian(n_layers=n_layers, params=params)
 
