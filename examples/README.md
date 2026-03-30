@@ -13,6 +13,7 @@ This directory contains two kinds of example material:
   - Intended to stay CPU-smoke-testable.
 - `standalone_gallery.py`
   - Figure-producing standalone examples for ABC band structures, bilayer Landau-level fans, and ABA band scans.
+  - The maintained ABC band-structure path pins `Delta=0.0` so the example isolates the effect of `U`.
   - Matches the maintained snippets shown in `docs/examples.md`.
 
 ## Companion Notebooks
