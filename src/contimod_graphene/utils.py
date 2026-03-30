@@ -1,4 +1,8 @@
 import numpy as np
+import jax
+import jax.numpy as jnp
+
+from .basis import layer_coordinates, sublattice_coordinates
 
 def extract_params(params, keys):
     """
@@ -12,31 +16,6 @@ def extract_params(params, keys):
         list: List of values corresponding to the keys. Returns 0.0 if a key is missing.
     """
     return [params.get(key, 0.0) for key in keys]
-
-def layer_coordinates(n_layers: int) -> np.ndarray:
-    """
-    Get the z-coordinates of the layers.
-
-    Args:
-        n_layers (int): Number of layers.
-
-    Returns:
-        numpy.ndarray: Array of z-coordinates for each site (2 sites per layer).
-    """
-    z_extent = n_layers * 0.335 # nm 
-    return np.repeat(np.linspace(-0.5, 0.5, n_layers), 2) if n_layers > 1 else np.array([0.0, 0.0])
-
-def sublattice_coordinates(n_layers: int) -> np.ndarray:
-    """
-    Get the sublattice coordinates (0 or 1) for each site.
-
-    Args:
-        n_layers (int): Number of layers.
-
-    Returns:
-        numpy.ndarray: Array of sublattice indices (0 for A, 1 for B) for each site.
-    """
-    return np.tile([0.0, 1.0], n_layers) if n_layers > 1 else np.array([0.0, 1.0])
 
 def construct_ll_ops(N_A: int, N_B: int):
     """
@@ -93,11 +72,6 @@ def construct_ll_ops(N_A: int, N_B: int):
     )
 
 
-# Simple batching helper used by contimod wrappers
-import jax
-import jax.numpy as jnp
-
-
 def batch_hamiltonian(h_fn, *, jit: bool = True):
     """Vectorize a single-k Hamiltonian callable over k-arrays (last dim = 2)."""
 
@@ -109,3 +83,12 @@ def batch_hamiltonian(h_fn, *, jit: bool = True):
         return out.reshape(orig_shape + out.shape[1:])
 
     return jax.jit(_batched) if jit else _batched
+
+
+__all__ = [
+    "batch_hamiltonian",
+    "construct_ll_ops",
+    "extract_params",
+    "layer_coordinates",
+    "sublattice_coordinates",
+]

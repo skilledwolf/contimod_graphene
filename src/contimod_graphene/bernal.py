@@ -4,7 +4,7 @@ import jax.numpy as jnp
 import jax.scipy as jsp
 from functools import partial
 from contimod_graphene.params import graphene_params_BLG
-from contimod_graphene.utils import extract_params, layer_coordinates, sublattice_coordinates, construct_ll_ops
+from contimod_graphene.utils import construct_ll_ops, extract_params
 
 ##############################################################################
 # General Multilayer Graphene (Bernal / ABA)

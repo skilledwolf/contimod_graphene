@@ -1,146 +1,131 @@
 # Usage Guide
 
-`contimod_graphene` provides tools to construct Hamiltonians for multilayer graphene systems. It supports both **Bernal (ABA)** and **Rhombohedral (ABC)** stacking configurations.
+`contimod_graphene` is organized around two public concepts:
+- `GrapheneTBParameters` for validated tight-binding parameters
+- `BernalMultilayer` / `RhombohedralMultilayer` for thin, immutable model objects
+
+The low-level `bernal` and `rhombohedral` modules remain available, but the default usage story should start from the top-level API.
 
 ## Basic Usage
 
-### 1. Bernal (ABA) Stacking
-
-To simulate Bernal-stacked graphene (e.g., Bilayer Graphene), use the `bernal` module.
+### 1. Bernal (ABA) model
 
 ```python
-import numpy as np
-import contimod_graphene.bernal as bernal
-from contimod_graphene.params import graphene_params_BLG
+import contimod_graphene as cg
 
-# 1. Define system parameters
-n_layers = 2
-params = graphene_params_BLG
+params = cg.GrapheneTBParameters.preset("blg").replace(U=0.0)
+model = cg.BernalMultilayer(n_layers=2, params=params)
 
-# 2. Get the Hamiltonian function
-# This returns a JIT-compiled function h(kx, ky)
-h_func = bernal.get_hamiltonian(n_layers=n_layers, params=params)
-
-# 3. Evaluate the Hamiltonian at a specific momentum point
-kx, ky = 0.05, 0.0  # Momentum in 1/Angstrom (approx, depends on units of parameters)
-H = h_func(kx, ky)
-
-print(f"Hamiltonian shape: {H.shape}")
-# Output: (4, 4) for 2 layers * 2 sublattices
+H = model.hamiltonian(0.05, 0.0)
+print(H.shape)  # (4, 4)
 ```
 
-### 2. Rhombohedral (ABC) Stacking
-
-For Rhombohedral stacking, use the `rhombohedral` module.
+### 2. Rhombohedral (ABC) model
 
 ```python
-import contimod_graphene.rhombohedral as rhombohedral
-from contimod_graphene.params import graphene_params_TLG
+import contimod_graphene as cg
 
-# 1. Define system parameters (e.g., Trilayer)
-n_layers = 3
-params = graphene_params_TLG
+params = cg.GrapheneTBParameters.preset("tlg")
+model = cg.RhombohedralMultilayer(n_layers=3, params=params)
 
-# If you omit `params`, the rhombohedral convenience wrappers default to
-# the ABC trilayer preset.
-
-# 2. Get the Hamiltonian function
-h_func = rhombohedral.get_hamiltonian(n_layers=n_layers, params=params)
-
-# 3. Evaluate
-H = h_func(0.1, 0.1)
-print(f"Hamiltonian shape: {H.shape}")
-# Output: (6, 6)
+H = model.hamiltonian(0.1, 0.1)
+print(H.shape)  # (6, 6)
 ```
 
-### 3. Landau Levels
+If you omit `params`, the model objects use family-appropriate built-in defaults:
+- `BernalMultilayer()` defaults to the BLG preset
+- `RhombohedralMultilayer()` defaults to the ABC/TLG preset
 
-You can also construct Landau Level (LL) Hamiltonians in a magnetic field.
+### 3. Landau levels
 
 ```python
-import contimod_graphene.bernal as bernal
-from contimod_graphene.params import graphene_params_BLG
+import contimod_graphene as cg
 
-# Calculate LL Hamiltonian for Bernal bilayer in a 10 Tesla field
-B_field = 10.0 # Tesla
-N_cut = 20     # Number of Landau levels to include
-
-h_ll_func = bernal.get_hamiltonian_LL(
-    n_layers=2, 
-    n_cut=N_cut, 
-    flip_valley=False, 
-    params=graphene_params_BLG
-)
-
-H_LL = h_ll_func(B_field)
-print(f"LL Hamiltonian shape: {H_LL.shape}")
+model = cg.BernalMultilayer(n_layers=2)
+H_LL = model.landau_level_hamiltonian(10.0, n_cut=20, valley="K")
+print(H_LL.shape)
 ```
 
-### 4. Vectorized evaluation with `jax.vmap`
-
-Because the zero-field Hamiltonians are JAX functions, you can efficiently evaluate them on a whole path of momenta using `jax.vmap`. For example, to compute a simple band structure along a 1D path:
+### 4. Batched evaluation
 
 ```python
-import jax
 import jax.numpy as jnp
-import matplotlib.pyplot as plt
+import contimod_graphene as cg
 
-import contimod_graphene.rhombohedral as rhombohedral
-from contimod_graphene.params import graphene_params_TLG
+model = cg.RhombohedralMultilayer(n_layers=3)
 
-# Trilayer ABC parameters and Hamiltonian
-n_layers = 3
-params = graphene_params_TLG
-h_func = rhombohedral.get_hamiltonian(n_layers=n_layers, params=params)
-
-# 1D k-path along kx
 k_lin = 0.28 * jnp.linspace(-0.5, 0.5, 400)
 ks = jnp.stack([k_lin, jnp.zeros_like(k_lin)], axis=-1)
 
-# Evaluate H(k) and diagonalize for each k
-Hs = jax.vmap(h_func, in_axes=(0, 0))(*ks.T)
+Hs = model.hamiltonian_batch(ks)
 bands = jnp.linalg.eigvalsh(Hs)
-
-for band in bands.T:
-    plt.plot(k_lin, band, color="black", linewidth=1.0, alpha=0.7)
-
-plt.xlabel(r"$k_x\,a$")
-plt.ylabel("Energy [meV]")
-plt.show()
 ```
+
+### 5. Two-band models
+
+```python
+import contimod_graphene as cg
+
+abc = cg.RhombohedralMultilayer(n_layers=3)
+H2_abc = abc.two_band_hamiltonian(0.02, -0.01)
+
+ab = cg.BernalMultilayer(n_layers=2)
+H2_ab = ab.two_band_hamiltonian(0.02, -0.01)
+```
+
+The Bernal two-band reduction is only implemented for bilayer graphene.
 
 ## Parameters
 
-The package includes standard parameter sets in `contimod_graphene.params`:
-
-*   `graphene_params`: Single layer
-*   `graphene_params_BLG`: Bilayer (Bernal)
-*   `graphene_params_TLG`: Trilayer (Rhombohedral/Bernal)
-*   `graphene_params_4LG`: 4-Layer
-
-You can also provide your own dictionary of parameters:
+Built-in presets are available through either the classmethod or the module-level constants:
 
 ```python
-custom_params = {
-    "gamma0": 3100,
-    "gamma1": 380,
-    "gamma2": -15,
-    "gamma3": 300,
-    "gamma4": 140,
-    "U": 0.0,
-    "delta": 10.0,
-    "Delta": 0.0
-}
+import contimod_graphene as cg
 
-h_func = bernal.get_hamiltonian(n_layers=2, params=custom_params)
+params = cg.GrapheneTBParameters.preset("4lg")
+same = cg.graphene_params_4LG
 ```
+
+Useful helpers:
+- `cg.load_parameter_set("tlg")`
+- `cg.load_parameter_set("path/to/custom.json")`
+- `cg.list_parameter_sets()`
+
+Parameter objects are immutable mappings, so they work with both the new model surface and the low-level kernels:
+
+```python
+import contimod_graphene as cg
+
+params = cg.GrapheneTBParameters.preset("tlg").replace(U=15.0, lambda1_eff=1.0)
+
+print(params["U"])
+print(dict(params))
+params.to_json("my_params.json")
+```
+
+Explicit overrides of unknown keys are stored as `extras`, which is useful for downstream workflows that carry additional metadata or symmetry-breaking couplings alongside the core tight-binding parameters.
+
+## Low-Level Functional API
+
+Advanced users can still call the low-level modules directly:
+
+```python
+from contimod_graphene import bernal, rhombohedral
+from contimod_graphene import graphene_params_BLG
+
+H_ab = bernal.hamiltonian(0.05, 0.0, n_layers=2, params=graphene_params_BLG)
+H_abc = rhombohedral.hamiltonian(0.05, 0.0, n_layers=3)
+```
+
+These functions remain the computational core that the model objects wrap.
 
 ## Units and Conventions
 
-- **Energies**: All tight-binding parameters in `contimod_graphene.params` are given in milli-electron volts (meV).
-- **Momentum**: The arguments `kx` and `ky` are measured in inverse length units consistent with your parameterization (typically Å⁻¹ for the provided parameter sets).
-- **Magnetic field**: The variable `B` in Landau-level Hamiltonians is in Tesla.
-- **LL matrix size**: For both Bernal and Rhombohedral stackings, `get_hamiltonian_LL(n_layers, n_cut, ...)` returns a dense matrix of shape `(n_layers * (2*n_cut - 1), n_layers * (2*n_cut - 1))`, reflecting the asymmetric basis with `(N_A, N_B) = (n_cut-1, n_cut)` in one valley and swapped in the other.
+- **Energies**: tight-binding parameters are in meV.
+- **Momentum**: `kx` and `ky` are in inverse-length units consistent with the chosen parameterization.
+- **Magnetic field**: `B` is in Tesla.
+- **LL matrix size**: the Landau-level helpers return dense matrices of shape `(n_layers * (2*n_cut - 1), n_layers * (2*n_cut - 1))`.
 - **JAX vs NumPy**:
-  - Zero-field Hamiltonians returned by `get_hamiltonian` and `get_2band_hamiltonian` are JAX functions and can be used with `jax.jit` and `jax.vmap`.
-  - Landau-level Hamiltonians returned by `get_hamiltonian_LL` are NumPy arrays constructed on the host and are not JAX-traceable by default.
+  - zero-field Hamiltonians are JAX arrays and work with `jax.jit` / `jax.vmap`
+  - Landau-level Hamiltonians are dense host-side arrays by default
+- **Local validation on this machine**: use CPU for tests (`JAX_PLATFORMS=cpu`) because the Apple Metal backend currently hits known unsupported JAX paths in this repo.

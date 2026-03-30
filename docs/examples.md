@@ -21,12 +21,12 @@ import matplotlib.pyplot as plt
 import contimod_graphene as cm_graphene
 
 # Start from the built-in trilayer parameters and add an interlayer bias
-params = dict(cm_graphene.params.graphene_params_TLG)
-params["U"] = 10.0  # meV
+params = cm_graphene.GrapheneTBParameters.preset("tlg").replace(U=10.0)
+model = cm_graphene.RhombohedralMultilayer(n_layers=3, params=params)
 
 # Full and effective 2-band Hamiltonians
-h_full = cm_graphene.rhombohedral.get_hamiltonian(n_layers=3, params=params)
-h_low = cm_graphene.rhombohedral.get_2band_hamiltonian(n_layers=3, params=params)
+h_full = lambda kx, ky: model.hamiltonian(kx, ky)
+h_low = lambda kx, ky: model.two_band_hamiltonian(kx, ky)
 
 # 1D k-path along kx
 k_lin = 0.28 * jnp.linspace(-0.5, 0.5, 400)
@@ -70,18 +70,15 @@ import matplotlib.pyplot as plt
 import contimod_graphene as cm_graphene
 
 # Bilayer parameters and LL Hamiltonian
-params = dict(cm_graphene.params.graphene_params_BLG)
-params["U"] = 0.0
-h_LL = cm_graphene.rhombohedral.get_hamiltonian_LL(
-    n_layers=2, n_cut=40, params=params
-)
+params = cm_graphene.GrapheneTBParameters.preset("blg").replace(U=0.0)
+model = cm_graphene.RhombohedralMultilayer(n_layers=2, params=params)
 
 # Magnetic field range
 B_values = jnp.linspace(0.5, 9.0, 80)  # Tesla
 
 eigvals = []
 for B in B_values:
-    H = h_LL(B)
+    H = model.landau_level_hamiltonian(B, n_cut=40)
     e, _ = jnp.linalg.eigh(H)
     eigvals.append(e)
 
@@ -130,10 +127,10 @@ k_lin = 0.28 * jnp.linspace(-0.5, 0.5, 400)
 ks = jnp.stack([k_lin, jnp.zeros_like(k_lin)], axis=-1)
 
 # ABA trilayer Hamiltonian and bands
-params_aba = dict(graphene_params_ABA)
-h_aba = cm_graphene.bernal.get_hamiltonian(n_layers=3, params=params_aba)
+params_aba = cm_graphene.GrapheneTBParameters.from_dict(graphene_params_ABA)
+model_aba = cm_graphene.BernalMultilayer(n_layers=3, params=params_aba)
 
-Hs = jax.vmap(h_aba, in_axes=(0, 0))(*ks.T)
+Hs = model_aba.hamiltonian_batch(ks)
 bands = jnp.linalg.eigvalsh(Hs)
 
 fig, ax = plt.subplots()
@@ -161,14 +158,13 @@ import jax
 import jax.scipy as jsp
 
 # Valley-projected trilayer Hamiltonian
-params = dict(cmg.params.graphene_params_TLG)
-params["U"] = 62.0
-h_valley = cmg.rhombohedral.get_hamiltonian(n_layers=3, params=params)
+params = cmg.GrapheneTBParameters.preset("tlg").replace(U=62.0)
+model = cmg.RhombohedralMultilayer(n_layers=3, params=params)
 
 # Include valley degree of freedom via a block-diagonal Hamiltonian
 h_full = lambda kx, ky: jsp.linalg.block_diag(
-    h_valley(kx, ky),
-    h_valley(-kx, -ky).conj(),
+    model.hamiltonian(kx, ky),
+    model.hamiltonian(-kx, -ky).conj(),
 )
 
 # Construct a k-mesh and evaluate H(k)

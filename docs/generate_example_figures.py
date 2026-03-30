@@ -16,19 +16,16 @@ def _ensure_static_dir() -> None:
 
 
 def generate_abc_trilayer_bandstructure() -> None:
-    params = dict(cm_graphene.params.graphene_params_TLG)
-    params["U"] = 10.0
-
-    h_full = cm_graphene.rhombohedral.get_hamiltonian(n_layers=3, params=params)
-    h_low = cm_graphene.rhombohedral.get_2band_hamiltonian(n_layers=3, params=params)
+    params = cm_graphene.GrapheneTBParameters.preset("tlg").replace(U=10.0)
+    model = cm_graphene.RhombohedralMultilayer(n_layers=3, params=params)
 
     k_lin = 0.28 * jnp.linspace(-0.5, 0.5, 400)
     ks = jnp.stack([k_lin, jnp.zeros_like(k_lin)], axis=-1)
 
-    hs_full = jax.vmap(h_full, in_axes=(0, 0))(*ks.T)
+    hs_full = model.hamiltonian_batch(ks)
     bands_full = jnp.linalg.eigvalsh(hs_full)
 
-    hs_low = jax.vmap(h_low, in_axes=(0, 0))(*ks.T)
+    hs_low = jax.vmap(lambda kx, ky: model.two_band_hamiltonian(kx, ky), in_axes=(0, 0))(*ks.T)
     bands_low = jnp.linalg.eigvalsh(hs_low)
 
     fig, ax = plt.subplots()
@@ -47,20 +44,14 @@ def generate_abc_trilayer_bandstructure() -> None:
 
 
 def generate_blg_landau_level_fan() -> None:
-    params = dict(cm_graphene.params.graphene_params_BLG)
-    params["U"] = 0.0
-
-    h_ll = cm_graphene.rhombohedral.get_hamiltonian_LL(
-        n_layers=2,
-        n_cut=40,
-        params=params,
-    )
+    params = cm_graphene.GrapheneTBParameters.preset("blg").replace(U=0.0)
+    model = cm_graphene.RhombohedralMultilayer(n_layers=2, params=params)
 
     b_values = jnp.linspace(0.5, 9.0, 80)
 
     eigvals = []
     for b in b_values:
-        h = h_ll(b)
+        h = model.landau_level_hamiltonian(b, n_cut=40)
         e, _ = jnp.linalg.eigh(h)
         eigvals.append(e)
 
@@ -90,13 +81,13 @@ def generate_aba_trilayer_bandstructure() -> None:
         "delta": 3.8,
     }
 
-    params_aba = dict(graphene_params_aba)
-    h_aba = cm_graphene.bernal.get_hamiltonian(n_layers=3, params=params_aba)
+    params_aba = cm_graphene.GrapheneTBParameters.from_dict(graphene_params_aba)
+    model_aba = cm_graphene.BernalMultilayer(n_layers=3, params=params_aba)
 
     k_lin = 0.28 * jnp.linspace(-0.5, 0.5, 400)
     ks = jnp.stack([k_lin, jnp.zeros_like(k_lin)], axis=-1)
 
-    hs = jax.vmap(h_aba, in_axes=(0, 0))(*ks.T)
+    hs = model_aba.hamiltonian_batch(ks)
     bands = jnp.linalg.eigvalsh(hs)
 
     fig, ax = plt.subplots()
@@ -121,4 +112,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

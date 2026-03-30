@@ -7,7 +7,8 @@ It is designed to be useful directly in its own right, with `contimod` treated a
 Current scope includes:
 - **Bernal (ABA) stacking**
 - **Rhombohedral (ABC) stacking**
-- JSON-backed parameter sets
+- Immutable, JSON-backed parameter sets
+- Standalone model objects with thin wrappers over the kernel layer
 - Basis and symmetry helpers
 - JAX-friendly batched Hamiltonian evaluation
 
@@ -19,35 +20,42 @@ It includes functionality for both zero-field Hamiltonians and Landau Level (LL)
 
 `contimod` builds on top of that layer for discretization, mesh/state containers, and many-body workflows such as SCF, susceptibility, TDHF, and superconductivity. Using `contimod` is optional, not required.
 
-## Modules
+## Quick Start
 
-### `contimod_graphene.bernal`
-Provides Hamiltonians for Bernal-stacked (ABA) multilayer graphene.
-- `get_hamiltonian(n_layers, params)`: Returns a function for the zero-field Hamiltonian.
-- `get_hamiltonian_LL(n_layers, n_cut, flip_valley, params)`: Returns a function for the Landau Level Hamiltonian.
+The canonical user-facing surface is the top-level parameter/model API:
 
-### `contimod_graphene.rhombohedral`
-Provides Hamiltonians for Rhombohedral-stacked (ABC) multilayer graphene.
-- `get_hamiltonian(n_layers, params)`: Returns a function for the zero-field Hamiltonian. If omitted, defaults target the ABC trilayer preset.
-- `get_2band_hamiltonian(n_layers, params)`: Returns a function for the effective 2-band Hamiltonian. If omitted, defaults target the ABC trilayer preset.
-- `get_hamiltonian_LL(n_layers, n_cut, flip_valley, params)`: Returns a function for the Landau Level Hamiltonian. If omitted, defaults target the ABC trilayer preset.
+```python
+import contimod_graphene as cg
 
-### `contimod_graphene.params`
-JSON-backed parameter sets for graphene tight-binding models (see `data/params.json`).
-- `get_params(kind_or_dict)`: Return params by preset name/alias (e.g., `"slg"`, `"blg"`, `"tlg"`, `"4lg"`), a JSON file path, or pass through a dict.
-- `load(path)`: Load params from a JSON file.
-- `list_sets()`: List available presets.
+params = cg.GrapheneTBParameters.preset("tlg").replace(U=20.0)
+model = cg.RhombohedralMultilayer(n_layers=3, params=params)
 
-### `contimod_graphene.utils`
-Utility functions for Hamiltonian construction and evaluation.
-- `extract_params(params, keys)`: Extract specific parameters from a dictionary.
-- `layer_coordinates(n_layers)`: Get z-coordinates for layers.
-- `sublattice_coordinates(n_layers)`: Get sublattice indices.
-- `construct_ll_ops(N_A, N_B)`: Construct ladder operators for Landau Level calculations.
-- `batch_hamiltonian(h_fn, jit=True)`: Vectorize a single-k Hamiltonian over an array of k-points.
+H = model.hamiltonian(0.1, 0.0)
+Hs = model.hamiltonian_batch([[0.0, 0.0], [0.1, 0.0]])
+Hll = model.landau_level_hamiltonian(10.0, n_cut=40, valley="K")
+H2 = model.two_band_hamiltonian(0.1, 0.0)
+```
 
-### `contimod_graphene.basis`
-Basis helpers for layer/sublattice coordinates and operator construction.
+The main public entry points are:
+- `GrapheneTBParameters`
+- `load_parameter_set(name_or_path)`
+- `list_parameter_sets()`
+- `BernalMultilayer`
+- `RhombohedralMultilayer`
+
+Physicist-friendly aliases are also available:
+- `ABAMultilayer`
+- `ABCMultilayer`
+
+## Low-Level Modules
+
+The low-level kernel modules remain available for advanced use, JAX-focused workflows, and direct access to the functional core:
+- `contimod_graphene.bernal`
+- `contimod_graphene.rhombohedral`
+- `contimod_graphene.params`
+- `contimod_graphene.basis`
+- `contimod_graphene.symmetry`
+- `contimod_graphene.utils`
 
 ## Installation
 
