@@ -19,6 +19,7 @@ This file is the shared backlog for `contimod_graphene` cleanup, packaging, vali
 - [ ] Audit docs and examples so the default usage story stands on its own without assuming `contimod`, except for explicitly downstream-integration documents.
 - [ ] Evaluate `ase` as an optional dependency for Brillouin-zone/path/plotting helpers if that produces a cleaner standalone single-particle API.
 - [ ] Evaluate `spglib` as an optional dependency only if symmetry classification becomes part of the intended public surface.
+- [ ] Resolve the current JAX-on-Metal validation gap surfaced during local testing: existing Hamiltonian and symmetry tests hit unsupported backend paths on Apple Metal (`stablehlo` bytecode attribute errors, `schur`, and `default_memory_space`), so CPU is the only reliable validation backend on this machine right now. Validation: reproduce the failures intentionally, then decide whether to document/pin CPU for tests or refactor the affected JAX/NumPy boundaries for backend portability.
 - [ ] Strengthen validation beyond shape/hermiticity smoke tests for the core Hamiltonian builders, especially where the package intends to make standalone scientific claims.
 
 ## Blocked / Needs Decision
