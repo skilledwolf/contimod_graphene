@@ -6,6 +6,12 @@
 
 The low-level `bernal` and `rhombohedral` modules remain available, but the default usage story should start from the top-level API.
 
+For runnable standalone scripts that mirror the examples below, see `examples/standalone_gallery.py`.
+
+Maintained standalone scripts:
+- `examples/standalone_quickstart.py`
+- `examples/standalone_gallery.py`
+
 ## Basic Usage
 
 ### 1. Bernal (ABA) model
@@ -101,6 +107,7 @@ params = cg.GrapheneTBParameters.preset("tlg").replace(U=15.0, lambda1_eff=1.0)
 print(params["U"])
 print(dict(params))
 params.to_json("my_params.json")
+same_params = cg.GrapheneTBParameters.from_json("my_params.json")
 ```
 
 Explicit overrides of unknown keys are stored as `extras`, which is useful for downstream workflows that carry additional metadata or symmetry-breaking couplings alongside the core tight-binding parameters.

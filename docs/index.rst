@@ -1,7 +1,15 @@
 Welcome to contimod_graphene
 ============================
 
-**contimod_graphene** is a standalone Python package for constructing tight-binding Hamiltonians for multilayer graphene systems. It is designed to be fast and easy to use, leveraging JAX for performance.
+**contimod_graphene** is a standalone Python package for multilayer graphene Hamiltonians, parameter sets, basis metadata, and related single-particle utilities.
+
+The recommended entry point is the top-level API:
+
+- ``GrapheneTBParameters``
+- ``BernalMultilayer``
+- ``RhombohedralMultilayer``
+
+Low-level kernel modules remain available for advanced use, but the user guide below leads with the standalone model/parameter surface rather than downstream ``contimod`` integration.
 
 Features
 --------

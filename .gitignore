@@ -101,6 +101,7 @@ target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+examples/outputs/
 
 # IPython
 profile_default/

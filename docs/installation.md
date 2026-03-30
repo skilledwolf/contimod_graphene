@@ -1,16 +1,18 @@
 # Installation
 
-## Option 1: User Installation (Preferred)
+## Option 1: GitHub Install
 
-If you just want to use the package without modifying it, you can install it directly from GitHub:
+If you just want to use the package without modifying it, install it directly from GitHub:
 
 ```bash
 pip install git+https://github.com/skilledwolf/contimod_graphene.git
 ```
 
-This will allow you to import the package in Python:
+This gives you the standalone package import in Python:
 ```python
-import contimod_graphene
+import contimod_graphene as cg
+
+print(cg.list_parameter_sets())
 ```
 
 ## Option 2: Developer Installation
@@ -25,14 +27,19 @@ If you plan to contribute to the package or modify the source code:
 
 2.  Install in editable mode:
     ```bash
-    pip install -e .
+    pip install -e ".[dev]"
     ```
 
-   Or using `hatch` (recommended for managing environments):
+   Or, if you use `hatch`, create and enter the managed environment:
    ```bash
    hatch env create
    hatch shell
    ```
+
+3.  Run a quick smoke check:
+    ```bash
+    python -c "import contimod_graphene as cg; print(cg.list_parameter_sets())"
+    ```
 
 ## Option 3: Docker (Cross-platform)
 

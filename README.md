@@ -14,6 +14,12 @@ Current scope includes:
 
 It includes functionality for both zero-field Hamiltonians and Landau Level (LL) Hamiltonians.
 
+The maintained standalone starting points are:
+- the top-level public API shown below
+- [docs/usage.md](/Users/wolft/Dev/contimod_graphene/docs/usage.md)
+- [examples/standalone_gallery.py](/Users/wolft/Dev/contimod_graphene/examples/standalone_gallery.py)
+- [examples/standalone_quickstart.py](/Users/wolft/Dev/contimod_graphene/examples/standalone_quickstart.py)
+
 ## Relationship To `contimod`
 
 `contimod_graphene` owns the low-level graphene-model layer: Hamiltonian builders, parameter presets, basis metadata, and related lightweight helpers.
@@ -36,6 +42,8 @@ Hll = model.landau_level_hamiltonian(10.0, n_cut=40, valley="K")
 H2 = model.two_band_hamiltonian(0.1, 0.0)
 ```
 
+Runnable standalone examples live in `examples/standalone_gallery.py`, and the docs mirror that surface in `docs/usage.md` and `docs/examples.md`.
+
 The main public entry points are:
 - `GrapheneTBParameters`
 - `load_parameter_set(name_or_path)`
@@ -46,6 +54,8 @@ The main public entry points are:
 Physicist-friendly aliases are also available:
 - `ABAMultilayer`
 - `ABCMultilayer`
+
+For a slightly longer walkthrough, see [docs/usage.md](/Users/wolft/Dev/contimod_graphene/docs/usage.md). For maintained example material, start with [examples/standalone_quickstart.py](/Users/wolft/Dev/contimod_graphene/examples/standalone_quickstart.py) and [examples/README.md](/Users/wolft/Dev/contimod_graphene/examples/README.md).
 
 ## Low-Level Modules
 
@@ -59,32 +69,32 @@ The low-level kernel modules remain available for advanced use, JAX-focused work
 
 ## Installation
 
-### Option 1a (for developers)
+### Option 1 (developer install)
 
-You can `git clone` the repository, activate your python environment of choice and install the package as editable using
+Clone the repository and install it in editable mode:
 ```bash
-pip install -e .
+pip install -e ".[dev]"
 ```
-This will allow you to use `import contimod_graphene as cm_graphene` in your python code. 
-You can uninstall the package any with `pip uninstall contimod_graphene`.
+This gives you the package locally as `import contimod_graphene as cg`.
 
-If you plan to contribute to the package, you must learn how to use `git` and how to create pull requests.
-
-### Option 1b (for developers)
-
-We now use [`hatch`](https://github.com/pypa/hatch) as dev tool, which you need to install seperately. It automates the entire development process. A suitable environment can for example be created using
+If you prefer `hatch`, create and enter the managed development environment with:
 ```bash
 hatch env create
 hatch shell
 ```
 
-### Option 2 (preferred method for users)
+Quick import check:
+```bash
+python -c "import contimod_graphene as cg; print(cg.list_parameter_sets())"
+```
 
-If you are sure that you will not need to modify the package, then open the terminal and run
+### Option 2 (GitHub install)
+
+If you only want to use the package, install it directly from GitHub:
 ```bash
 pip install git+https://github.com/skilledwolf/contimod_graphene.git
 ```
-This will allow you to do `import contimod_graphene as cm_graphene` in your python code. You can uninstall the package with `pip uninstall contimod_graphene`.
+This installs the same top-level import: `import contimod_graphene as cg`.
 
 ### Option 3 (cross-platform)
 
