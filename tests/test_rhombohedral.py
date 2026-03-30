@@ -118,5 +118,26 @@ class TestRhombohedral(unittest.TestCase):
             atol=1e-10,
         )
 
+    def test_delta_is_currently_ignored_by_all_rhombohedral_surfaces(self):
+        base = dict(self.params)
+        shifted = dict(self.params)
+        shifted["delta"] = self.params["delta"] + 37.5
+
+        np.testing.assert_allclose(
+            np.asarray(rhombohedral.hamiltonian(0.02, -0.01, n_layers=3, params=base)),
+            np.asarray(rhombohedral.hamiltonian(0.02, -0.01, n_layers=3, params=shifted)),
+            atol=1e-10,
+        )
+        np.testing.assert_allclose(
+            np.asarray(rhombohedral.hamiltonian_2bands(0.02, -0.01, n_layers=3, params=base)),
+            np.asarray(rhombohedral.hamiltonian_2bands(0.02, -0.01, n_layers=3, params=shifted)),
+            atol=1e-10,
+        )
+        np.testing.assert_allclose(
+            rhombohedral.hamiltonian_LL(4.0, n_layers=3, n_cut=8, params=base),
+            rhombohedral.hamiltonian_LL(4.0, n_layers=3, n_cut=8, params=shifted),
+            atol=1e-10,
+        )
+
 if __name__ == '__main__':
     unittest.main()

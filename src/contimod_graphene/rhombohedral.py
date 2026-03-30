@@ -64,6 +64,11 @@ def hamiltonian(kx: float, ky: float, n_layers: int = 3, params: dict = graphene
     """
     Construct the zero-field Hamiltonian for N-layer Rhombohedral (ABC) graphene.
 
+    ``U`` controls the inversion-odd layer bias across the stack. ``Delta``
+    controls the inversion-even layer-offset profile (matching the trilayer
+    ``Δ2`` convention for ``n_layers=3``). The shared parameter key ``delta``
+    is currently accepted for compatibility but is not used by the ABC kernels.
+
     Args:
         kx (float): Momentum in x-direction.
         ky (float): Momentum in y-direction.
@@ -117,6 +122,7 @@ def hamiltonian_2bands(kx: float, ky: float, n_layers: int = 3, params: dict = g
       n_layers (int): Number of layers in the ABC stack (N must be > 0).
       params (dict): Dictionary of parameters including:
             "gamma0", "gamma1", "gamma2", "gamma3", "gamma4", "U", "Delta", "delta"
+            where ``delta`` is currently accepted for compatibility but unused.
 
     Returns:
       A 2x2 JAX array representing the effective, numerically projected Hamiltonian.
@@ -189,6 +195,7 @@ def hamiltonian_LL(B: float, n_layers: int = 3, n_cut: int = 50, flip_valley: bo
       n_cut: LL cutoff on the sublattice that hosts the n=0 mode
       flip_valley: if True, build K' (swap sublattices + sign switches)
       params: dict with keys "gamma0", "gamma1", "gamma2", "gamma3", "gamma4", "U", "Delta"
+        and optionally "delta", which is currently unused for ABC models.
     Returns:
       Dense numpy array of shape (n_layers*(2*n_cut-1), n_layers*(2*n_cut-1))
     """

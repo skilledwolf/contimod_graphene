@@ -39,7 +39,7 @@ These are implemented in [tests/test_physics_validation.py](/Users/wolft/Dev/con
 
 - Bernal finite-`Delta` coverage currently stops at bilayer zero-field agreement with the package two-band model. Paper-backed finite-`Delta` multilayer and LL validations remain future work.
 - Rhombohedral `Delta` is now validated as a distinct even layer-offset term relative to `U`, but only the trilayer meaning is directly paper-backed. The scalar `N>3` extension remains a package convention.
-- The rhombohedral `delta` slot remains unresolved and currently unused by the ABC kernels; it should not be treated as a validated physical control yet.
+- The rhombohedral `delta` slot is intentionally unused for now. The ABC kernels accept it only for shared-parameter compatibility, and tests pin that it does not affect zero-field, two-band, or LL outputs until a source-backed onsite meaning is adopted.
 - ABA trilayer mirror-parity block tests remain deferred until the package exposes an explicit mirror/parity basis transform or projector helper.
 - Zero-field valley-degeneracy tests remain deferred because the zero-field public Hamiltonians do not expose a valley switch.
 - Bilayer finite-`gamma3` Lifshitz topology, ABA modulo-3 LL anticrossings, and ABC low-field LL triplets belong in a slower regression tier rather than the default fast suite.
