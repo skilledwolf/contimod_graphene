@@ -174,6 +174,24 @@ def test_abc_outer_site_zero_modes_at_k0(n_layers: int, preset: str):
         assert float(outer_weight) == pytest.approx(1.0, abs=1e-12)
 
 
+def test_abc_trilayer_u_opens_gap_while_delta_shifts_low_energy_pair():
+    clean_params = _clean_rhombohedral_params("tlg")
+
+    u_model = cg.RhombohedralMultilayer(n_layers=3, params=clean_params.replace(U=12.0, Delta=0.0))
+    delta_model = cg.RhombohedralMultilayer(n_layers=3, params=clean_params.replace(U=0.0, Delta=6.0))
+
+    u_full = np.linalg.eigvalsh(np.asarray(u_model.hamiltonian(0.0, 0.0)))
+    delta_full = np.linalg.eigvalsh(np.asarray(delta_model.hamiltonian(0.0, 0.0)))
+    u_reduced = np.linalg.eigvalsh(np.asarray(u_model.two_band_hamiltonian(0.0, 0.0)))
+    delta_reduced = np.linalg.eigvalsh(np.asarray(delta_model.two_band_hamiltonian(0.0, 0.0)))
+
+    np.testing.assert_allclose(u_full[2:4], np.array([-6.0, 6.0]), atol=1e-10, rtol=1e-10)
+    np.testing.assert_allclose(u_reduced, np.array([-6.0, 6.0]), atol=1e-10, rtol=1e-10)
+
+    np.testing.assert_allclose(delta_full[2:4], np.array([6.0, 6.0]), atol=1e-10, rtol=1e-10)
+    np.testing.assert_allclose(delta_reduced, np.array([6.0, 6.0]), atol=1e-10, rtol=1e-10)
+
+
 @pytest.mark.parametrize(("n_layers", "preset", "expected_power"), [(3, "tlg", 3.0), (4, "4lg", 4.0)])
 def test_abc_low_energy_scaling_and_two_band_agreement(
     n_layers: int,

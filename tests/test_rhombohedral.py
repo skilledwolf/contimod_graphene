@@ -81,5 +81,42 @@ class TestRhombohedral(unittest.TestCase):
         self.assertEqual(h_ll_default.shape, (45, 45))
         self.assertTrue(np.allclose(h_ll_default, h_ll_explicit))
 
+    def test_delta_enters_zero_field_as_inversion_even_layer_profile(self):
+        params = dict(self.params)
+        params.update({"gamma2": 0.0, "gamma3": 0.0, "gamma4": 0.0, "U": 0.0, "Delta": 6.0, "delta": 0.0})
+
+        h_tlg = np.asarray(rhombohedral.hamiltonian(0.0, 0.0, n_layers=3, params=params))
+        np.testing.assert_allclose(np.diag(h_tlg), np.array([6.0, 6.0, -12.0, -12.0, 6.0, 6.0]), atol=1e-10)
+
+        h_4lg = np.asarray(rhombohedral.hamiltonian(0.0, 0.0, n_layers=4, params=params))
+        np.testing.assert_allclose(
+            np.diag(h_4lg),
+            np.array([6.0, 6.0, -6.0, -6.0, -6.0, -6.0, 6.0, 6.0]),
+            atol=1e-10,
+        )
+
+    def test_delta_enters_ll_surface_when_hoppings_vanish(self):
+        params = dict(self.params)
+        params.update(
+            {
+                "gamma0": 0.0,
+                "gamma1": 0.0,
+                "gamma2": 0.0,
+                "gamma3": 0.0,
+                "gamma4": 0.0,
+                "U": 0.0,
+                "Delta": 5.0,
+                "delta": 0.0,
+            }
+        )
+
+        h_ll = rhombohedral.hamiltonian_LL(1.0, n_layers=3, n_cut=6, params=params)
+        evals = np.linalg.eigvalsh(h_ll)
+        np.testing.assert_allclose(
+            evals,
+            np.sort(np.concatenate([np.full(11, -10.0), np.full(22, 5.0)])),
+            atol=1e-10,
+        )
+
 if __name__ == '__main__':
     unittest.main()

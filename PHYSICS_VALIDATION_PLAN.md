@@ -8,6 +8,7 @@ This note records the package-specific convention map and the first paper-backed
 - The zero-field public API is valley-fixed. Tests at zero field therefore compare spectra and low-energy structure within that fixed convention rather than asserting explicit `K/K'` degeneracies.
 - Landau-level Hamiltonians use asymmetric LL bases that depend on the selected valley. LL tests compare spectra only, not raw matrix elements or basis vectors.
 - In the Bernal family, `Delta` is implemented as a full-model A/B sublattice asymmetry `(+Delta/2 on A, -Delta/2 on B)`, while `delta` remains the dimer versus non-dimer onsite offset and `U` remains the layer-asymmetry term.
+- In the rhombohedral family, `U` remains the layer-asymmetry / outer-layer bias term. `Delta` now matches the trilayer `Δ2` convention for `N=3` and is extended for `N>3` as a single inversion-even layer-curvature profile; that `N>3` extension is a package inference rather than a direct paper convention.
 - First-wave analytic checks use explicit clean-subspace parameter overlays instead of package defaults:
   - BLG clean subset: `gamma2=gamma3=gamma4=gamma5=U=Delta=delta=0`
   - ABC clean subset (`N=3,4`): `gamma2=gamma3=gamma4=gamma5=U=Delta=delta=0`
@@ -37,6 +38,8 @@ These are implemented in [tests/test_physics_validation.py](/Users/wolft/Dev/con
 ## Deferred / Slower Validation
 
 - Bernal finite-`Delta` coverage currently stops at bilayer zero-field agreement with the package two-band model. Paper-backed finite-`Delta` multilayer and LL validations remain future work.
+- Rhombohedral `Delta` is now validated as a distinct even layer-offset term relative to `U`, but only the trilayer meaning is directly paper-backed. The scalar `N>3` extension remains a package convention.
+- The rhombohedral `delta` slot remains unresolved and currently unused by the ABC kernels; it should not be treated as a validated physical control yet.
 - ABA trilayer mirror-parity block tests remain deferred until the package exposes an explicit mirror/parity basis transform or projector helper.
 - Zero-field valley-degeneracy tests remain deferred because the zero-field public Hamiltonians do not expose a valley switch.
 - Bilayer finite-`gamma3` Lifshitz topology, ABA modulo-3 LL anticrossings, and ABC low-field LL triplets belong in a slower regression tier rather than the default fast suite.

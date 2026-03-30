@@ -10,6 +10,55 @@ from contimod_graphene.params import graphene_params_TLG
 # General Rhombohedral / ABC Multilayer Graphene
 ##############################################################################
 
+
+def _rhombohedral_layer_potentials_jax(
+    n_layers: int,
+    *,
+    U,
+    Delta,
+) -> jnp.ndarray:
+    """Return per-layer onsite energies for ABC stacks.
+
+    For trilayers, ``Delta`` reproduces the literature ``Δ2`` term: an
+    inversion-even central-layer offset relative to the average outer-layer
+    energy. For thicker stacks, we extend the same scalar parameter as the
+    leading inversion-even layer-curvature profile.
+    """
+    dtype = jnp.result_type(U, Delta, float)
+    if n_layers <= 1:
+        return jnp.zeros((n_layers,), dtype=dtype)
+
+    linear = U * jnp.linspace(1 / 2, -1 / 2, n_layers, dtype=dtype)
+    if n_layers < 3:
+        return linear
+
+    coords = jnp.arange(n_layers, dtype=dtype) - dtype.type((n_layers - 1) / 2)
+    centered_sq = coords**2 - jnp.mean(coords**2)
+    outer_scale = jnp.abs(centered_sq[0])
+    curvature = Delta * centered_sq / outer_scale
+    return linear + curvature
+
+
+def _rhombohedral_layer_potentials_numpy(
+    n_layers: int,
+    *,
+    U: float,
+    Delta: float,
+) -> np.ndarray:
+    """NumPy companion to ``_rhombohedral_layer_potentials_jax`` for LL builders."""
+    if n_layers <= 1:
+        return np.zeros(n_layers, dtype=float)
+
+    linear = U * np.linspace(1 / 2, -1 / 2, n_layers, dtype=float)
+    if n_layers < 3:
+        return linear
+
+    coords = np.arange(n_layers, dtype=float) - (n_layers - 1) / 2
+    centered_sq = coords**2 - np.mean(coords**2)
+    outer_scale = abs(centered_sq[0])
+    curvature = Delta * centered_sq / outer_scale
+    return linear + curvature
+
 @partial(jax.jit, static_argnames=['n_layers'])
 def hamiltonian(kx: float, ky: float, n_layers: int = 3, params: dict = graphene_params_TLG) -> jnp.ndarray:
     """
@@ -25,19 +74,20 @@ def hamiltonian(kx: float, ky: float, n_layers: int = 3, params: dict = graphene
         jax.numpy.ndarray: The Hamiltonian matrix of shape (2*n_layers, 2*n_layers).
     """
     keys = ["gamma0", "gamma1", "gamma2", "gamma3", "gamma4", "U", "Delta", "delta"]
-    gamma0, gamma1, gamma2, gamma3, gamma4, U, Delta, delta = extract_params(params, keys)
+    gamma0, gamma1, gamma2, gamma3, gamma4, U, Delta, _delta = extract_params(params, keys)
 
     v = jnp.sqrt(3) * gamma0 / 2
     v3 = jnp.sqrt(3) * gamma3 / 2
     v4 = jnp.sqrt(3) * gamma4 / 2
     pi = kx + 1j * ky
+    layer_potentials = _rhombohedral_layer_potentials_jax(n_layers, U=U, Delta=Delta)
 
     # Use D block for both single-layer and multilayer cases
     D = jnp.array([[0, v * jnp.conj(pi)], 
                     [0, 0]])
 
     if n_layers < 2:
-        return D + D.T.conj()
+        return D + D.T.conj() + layer_potentials[0] * jnp.eye(2)
 
     # Base Hamiltonian block for a multilayer system
     V = jnp.array([[-v4 * jnp.conj(pi), v3 * pi], 
@@ -51,7 +101,7 @@ def hamiltonian(kx: float, ky: float, n_layers: int = 3, params: dict = graphene
         M += jnp.kron(jnp.diag(jnp.ones(n_layers - 2), k=2), W)
 
     M = M + M.conj().T
-    M = M + jnp.kron(jnp.diag(U*jnp.linspace(1/ 2, -1/ 2, n_layers)), jnp.eye(2))
+    M = M + jnp.kron(jnp.diag(layer_potentials), jnp.eye(2))
 
     return M
 
@@ -73,7 +123,7 @@ def hamiltonian_2bands(kx: float, ky: float, n_layers: int = 3, params: dict = g
     """
     # Extract tight-binding parameters.
     keys = ["gamma0", "gamma1", "gamma2", "gamma3", "gamma4", "U", "Delta", "delta"]
-    gamma0, gamma1, gamma2, gamma3, gamma4, U, Delta, delta = extract_params(params, keys)
+    gamma0, gamma1, gamma2, gamma3, gamma4, U, Delta, _delta = extract_params(params, keys)
     
     # Define velocities (in units of ℏ*pi/a)
     v  = jnp.sqrt(3) * gamma0 / 2
@@ -92,14 +142,16 @@ def hamiltonian_2bands(kx: float, ky: float, n_layers: int = 3, params: dict = g
     W = jnp.array([[0,                gamma2/2],
                    [0,                0         ]])
     
+    layer_potentials = _rhombohedral_layer_potentials_jax(n_layers, U=U, Delta=Delta)
+
     # Build the full (2N x 2N) Hamiltonian matrix.
     M = jnp.kron(jnp.eye(n_layers), D) + jnp.kron(jnp.diag(jnp.ones(n_layers - 1), k=1), V)
     if n_layers > 2:
         M = M + jnp.kron(jnp.diag(jnp.ones(n_layers - 2), k=2), W)
     M = M + M.conj().T  # Ensure M is Hermitian.
     
-    # Add a potential term if U is nonzero.
-    M = M + jnp.kron(jnp.diag(jnp.linspace(U/2, -U/2, n_layers)), jnp.eye(2))
+    # Add layer onsite energies, including the inversion-even Delta profile.
+    M = M + jnp.kron(jnp.diag(layer_potentials), jnp.eye(2))
     
     # Project out the internal layers.
     # H11 corresponds to the (1,1) block from the first and last layers.
@@ -136,7 +188,7 @@ def hamiltonian_LL(B: float, n_layers: int = 3, n_cut: int = 50, flip_valley: bo
       n_layers: number of layers
       n_cut: LL cutoff on the sublattice that hosts the n=0 mode
       flip_valley: if True, build K' (swap sublattices + sign switches)
-      params: dict with keys "gamma0", "gamma1", "gamma2", "gamma3", "gamma4", "U"
+      params: dict with keys "gamma0", "gamma1", "gamma2", "gamma3", "gamma4", "U", "Delta"
     Returns:
       Dense numpy array of shape (n_layers*(2*n_cut-1), n_layers*(2*n_cut-1))
     """
@@ -156,6 +208,8 @@ def hamiltonian_LL(B: float, n_layers: int = 3, n_cut: int = 50, flip_valley: bo
     γ1  = p("gamma1")
     γ2  = p("gamma2")
     U   = p("U")
+    Delta = p("Delta")
+    layer_potentials = _rhombohedral_layer_potentials_numpy(n_layers, U=U, Delta=Delta)
 
     # Choose LL dimensions per valley:
     # K valley: zero mode on B    -> (N_B, N_A) = (n_cut,   n_cut-1)
@@ -211,9 +265,9 @@ def hamiltonian_LL(B: float, n_layers: int = 3, n_cut: int = 50, flip_valley: bo
     # Hermitize (adds the BA block and interlayer lower-diagonal blocks)
     M = M + M.conj().T
 
-    # Layer potential (U) distributed linearly across layers, same on both sublattices
-    if not np.isclose(U, 0.0):
-        M += np.kron(np.diag(np.linspace(U/2.0, -U/2.0, n_layers)), np.eye(d_layer))
+    # Layer onsite energies are the same on both sublattices within a layer.
+    if np.any(np.abs(layer_potentials) > 0.0):
+        M += np.kron(np.diag(layer_potentials), np.eye(d_layer))
 
     return M
 
