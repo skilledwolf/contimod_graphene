@@ -2,7 +2,17 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 
-from .basis import layer_coordinates, sublattice_coordinates
+from .basis import (
+    bernal_dimer_mask,
+    bernal_nondimer_mask,
+    layer_coordinates,
+    rhombohedral_outer_site_indices,
+    sublattice_coordinates,
+    zero_field_orbital_index,
+    zero_field_orbital_labels,
+    zero_field_orbital_mask,
+    zero_field_orbital_projector,
+)
 
 def extract_params(params, keys):
     """
@@ -87,8 +97,15 @@ def batch_hamiltonian(h_fn, *, jit: bool = True):
 
 __all__ = [
     "batch_hamiltonian",
+    "bernal_dimer_mask",
+    "bernal_nondimer_mask",
     "construct_ll_ops",
     "extract_params",
     "layer_coordinates",
+    "rhombohedral_outer_site_indices",
     "sublattice_coordinates",
+    "zero_field_orbital_index",
+    "zero_field_orbital_labels",
+    "zero_field_orbital_mask",
+    "zero_field_orbital_projector",
 ]
