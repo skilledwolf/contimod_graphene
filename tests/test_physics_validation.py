@@ -34,6 +34,22 @@ def _clean_rhombohedral_params(preset: str) -> cg.GrapheneTBParameters:
     )
 
 
+def _aba_trilayer_params(*, U: float = 0.0) -> cg.GrapheneTBParameters:
+    return cg.GrapheneTBParameters.from_dict(
+        {
+            "gamma0": 3100.0,
+            "gamma1": 370.0,
+            "gamma2": -19.0,
+            "gamma3": 315.0,
+            "gamma4": 140.0,
+            "gamma5": 20.0,
+            "U": U,
+            "Delta": 18.5,
+            "delta": 3.8,
+        }
+    )
+
+
 def _delta_bernal_bilayer_params(Delta: float = 20.0) -> cg.GrapheneTBParameters:
     return _clean_bernal_bilayer_params().replace(Delta=Delta)
 
@@ -66,6 +82,21 @@ def test_zero_field_basis_helpers_expose_named_site_metadata():
         cg.basis.bernal_dimer_mask(4),
         np.array([False, True, True, False, False, True, True, False]),
     )
+
+    mirror_unitary = cg.basis.bernal_trilayer_mirror_unitary()
+    odd_projector, even_projector = cg.basis.bernal_trilayer_mirror_projectors()
+
+    assert mirror_unitary.shape == (6, 6)
+    np.testing.assert_allclose(
+        mirror_unitary.conj().T @ mirror_unitary,
+        np.eye(6),
+        atol=1e-12,
+        rtol=1e-12,
+    )
+    np.testing.assert_allclose(odd_projector @ odd_projector, odd_projector, atol=1e-12, rtol=1e-12)
+    np.testing.assert_allclose(even_projector @ even_projector, even_projector, atol=1e-12, rtol=1e-12)
+    np.testing.assert_allclose(odd_projector @ even_projector, np.zeros((6, 6)), atol=1e-12, rtol=1e-12)
+    np.testing.assert_allclose(odd_projector + even_projector, np.eye(6), atol=1e-12, rtol=1e-12)
 
 
 def test_bilayer_zero_field_spectra_match_between_bernal_and_rhombohedral_models():
@@ -152,6 +183,32 @@ def test_blg_ll_zero_modes_and_ab_equivalence(B: float, valley: str):
 
     np.testing.assert_allclose(bernal_evals, rhombohedral_evals, atol=5e-5, rtol=1e-10)
     assert np.count_nonzero(np.abs(bernal_evals) < 1e-10) == 2
+
+
+def test_aba_trilayer_mirror_parity_blocks_decouple_and_u_breaks_them():
+    mirror_unitary = cg.basis.bernal_trilayer_mirror_unitary()
+    odd_projector, even_projector = cg.basis.bernal_trilayer_mirror_projectors()
+
+    symmetric_model = cg.BernalMultilayer(n_layers=3, params=_aba_trilayer_params(U=0.0))
+    biased_model = cg.BernalMultilayer(n_layers=3, params=_aba_trilayer_params(U=30.0))
+
+    for kx, ky in ((0.0, 0.0), (0.01, 0.0), (0.015, -0.02)):
+        h_symmetric = np.asarray(symmetric_model.hamiltonian(kx, ky))
+        h_mirror = mirror_unitary.conj().T @ h_symmetric @ mirror_unitary
+        off_block = h_mirror[:2, 2:]
+        scale = max(np.linalg.norm(h_symmetric), 1.0)
+
+        assert np.linalg.norm(off_block) / scale < 1e-12
+        np.testing.assert_allclose(
+            odd_projector @ h_symmetric @ even_projector,
+            np.zeros((6, 6)),
+            atol=1e-10,
+            rtol=1e-10,
+        )
+
+        h_biased = np.asarray(biased_model.hamiltonian(kx, ky))
+        biased_coupling = odd_projector @ h_biased @ even_projector
+        assert np.linalg.norm(biased_coupling) > 1e-6
 
 
 @pytest.mark.parametrize(("n_layers", "preset"), [(3, "tlg"), (4, "4lg")])

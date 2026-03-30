@@ -136,6 +136,49 @@ def bernal_dimer_mask(n_layers: int) -> np.ndarray:
     return ~bernal_nondimer_mask(n_layers)
 
 
+def bernal_trilayer_mirror_unitary(
+    dtype: type[np.complexfloating] | type[np.floating] | type[np.bool_] = complex,
+) -> np.ndarray:
+    """Return the ABA-trilayer mirror basis unitary for `(A1, B1, A2, B2, A3, B3)`.
+
+    The returned columns are ordered as:
+    `((A1-A3)/sqrt(2), (B1-B3)/sqrt(2), (A1+A3)/sqrt(2), (B1+B3)/sqrt(2), A2, B2)`.
+    The first two columns therefore span the odd mirror-parity sector and the last
+    four span the even sector.
+    """
+    scale = 1.0 / np.sqrt(2.0)
+    U = np.zeros((6, 6), dtype=dtype)
+
+    a1 = zero_field_orbital_index(3, 1, "A")
+    b1 = zero_field_orbital_index(3, 1, "B")
+    a2 = zero_field_orbital_index(3, 2, "A")
+    b2 = zero_field_orbital_index(3, 2, "B")
+    a3 = zero_field_orbital_index(3, 3, "A")
+    b3 = zero_field_orbital_index(3, 3, "B")
+
+    U[a1, 0] = scale
+    U[a3, 0] = -scale
+    U[b1, 1] = scale
+    U[b3, 1] = -scale
+    U[a1, 2] = scale
+    U[a3, 2] = scale
+    U[b1, 3] = scale
+    U[b3, 3] = scale
+    U[a2, 4] = 1.0
+    U[b2, 5] = 1.0
+    return U
+
+
+def bernal_trilayer_mirror_projectors(
+    dtype: type[np.complexfloating] | type[np.floating] | type[np.bool_] = complex,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return the `(odd, even)` mirror-parity projectors for ABA trilayer graphene."""
+    unitary = bernal_trilayer_mirror_unitary(dtype=complex)
+    odd = unitary[:, :2] @ unitary[:, :2].conj().T
+    even = unitary[:, 2:] @ unitary[:, 2:].conj().T
+    return np.asarray(odd, dtype=dtype), np.asarray(even, dtype=dtype)
+
+
 def rhombohedral_outer_site_indices(n_layers: int) -> tuple[int, int]:
     """Return the zero-field low-energy site indices `(A1, B_N)` for ABC stacks."""
     n_layers = _validate_n_layers(n_layers)
@@ -212,6 +255,8 @@ __all__ = [
     "PAULI",
     "bernal_dimer_mask",
     "bernal_nondimer_mask",
+    "bernal_trilayer_mirror_projectors",
+    "bernal_trilayer_mirror_unitary",
     "build_ops",
     "layer_coordinates",
     "paulikron_local",
