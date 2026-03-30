@@ -26,12 +26,14 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest",
-    "black"
+    "black",
+    "matplotlib",
 ]
 docs = [
     "sphinx",
     "sphinx_rtd_theme",
-    "myst-parser"
+    "myst-parser",
+    "matplotlib",
 ]
 
 [tool.hatch.build.targets.wheel]
