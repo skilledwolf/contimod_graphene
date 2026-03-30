@@ -33,7 +33,7 @@ def _notebook_code(relpath: str) -> str:
 
 
 def test_readme_and_usage_quickstart_surface_smoke(tmp_path):
-    params = cg.GrapheneTBParameters.preset("tlg").replace(U=20.0)
+    params = cg.GrapheneTBParameters.preset("tlg").replace(U=20.0, Delta=0.0)
     model = cg.RhombohedralMultilayer(n_layers=3, params=params)
 
     h0 = np.asarray(model.hamiltonian(0.1, 0.0))
@@ -74,6 +74,8 @@ def test_standalone_quickstart_example_writes_summary(tmp_path):
     saved = json.loads(summary_path.read_text())
     assert saved["parameter_preset"] == "tlg"
     assert saved["available_presets"] == ["slg", "blg", "tlg", "4lg"]
+    assert saved["abc_u_mev"] == 20.0
+    assert saved["abc_delta_layer_offset_mev"] == 0.0
     assert saved["zero_field_shape"] == [6, 6]
     assert saved["two_band_shape"] == [2, 2]
     assert saved["band_shape"] == [17, 6]
@@ -97,6 +99,8 @@ def test_standalone_gallery_example_writes_expected_artifacts(tmp_path):
 
     assert result["abc_trilayer"]["bands_full_shape"] == (31, 6)
     assert result["abc_trilayer"]["bands_low_shape"] == (31, 2)
+    assert result["abc_trilayer"]["u_mev"] == 10.0
+    assert result["abc_trilayer"]["delta_layer_offset_mev"] == 0.0
     assert result["aba_trilayer"]["bands_shape"] == (31, 6)
     assert result["blg_landau_levels"]["n_fields"] == 6
     assert result["blg_landau_levels"]["levels_per_field"] > 0

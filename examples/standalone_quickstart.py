@@ -24,7 +24,8 @@ def main(
     outdir = Path(outdir) if outdir is not None else DEFAULT_OUTDIR
     outdir.mkdir(parents=True, exist_ok=True)
 
-    params = cg.GrapheneTBParameters.preset("tlg").replace(U=20.0)
+    # Pin Delta=0 here so the quickstart isolates the outer-layer bias U.
+    params = cg.GrapheneTBParameters.preset("tlg").replace(U=20.0, Delta=0.0)
     abc = cg.RhombohedralMultilayer(n_layers=3, params=params)
     ab = cg.BernalMultilayer(n_layers=2)
 
@@ -40,6 +41,8 @@ def main(
     summary = {
         "parameter_preset": params.preset_name,
         "available_presets": cg.list_parameter_sets(),
+        "abc_u_mev": float(params["U"]),
+        "abc_delta_layer_offset_mev": float(params["Delta"]),
         "zero_field_shape": list(np.asarray(h0).shape),
         "two_band_shape": list(np.asarray(h2).shape),
         "band_shape": list(np.asarray(bands).shape),

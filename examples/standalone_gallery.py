@@ -28,9 +28,10 @@ def abc_trilayer_bandstructure(
     n_k: int = 400,
     kmax: float = 0.28,
     U: float = 10.0,
+    Delta: float = 0.0,
 ) -> dict[str, object]:
     outdir_path = _prepare_outdir(outdir)
-    params = cg.GrapheneTBParameters.preset("tlg").replace(U=U)
+    params = cg.GrapheneTBParameters.preset("tlg").replace(U=U, Delta=Delta)
     model = cg.RhombohedralMultilayer(n_layers=3, params=params)
 
     k_lin = kmax * jnp.linspace(-0.5, 0.5, int(n_k))
@@ -61,6 +62,8 @@ def abc_trilayer_bandstructure(
 
     return {
         "output_path": str(output_path),
+        "u_mev": float(params["U"]),
+        "delta_layer_offset_mev": float(params["Delta"]),
         "bands_full_shape": tuple(int(x) for x in bands_full.shape),
         "bands_low_shape": tuple(int(x) for x in bands_low.shape),
     }

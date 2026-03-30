@@ -6,7 +6,9 @@ The repository still carries a few historical notebooks in `examples/`, but the 
 
 This example compares the full tight-binding model with its low-energy 2-band approximation for ABC trilayer graphene.
 
-The figure below shows an example band structure for ABC trilayer graphene with an interlayer bias:
+The figure below shows an example band structure for ABC trilayer graphene with an
+interlayer bias. The maintained example pins `Delta=0.0` so the plot isolates the
+effect of `U` rather than the ABC/TLG preset's small built-in `Delta=-1.15` offset:
 
 ![ABC trilayer band structure](_static/abc_trilayer_bandstructure.png)
 
@@ -18,7 +20,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import contimod_graphene as cg
 
-params = cg.GrapheneTBParameters.preset("tlg").replace(U=10.0)
+params = cg.GrapheneTBParameters.preset("tlg").replace(U=10.0, Delta=0.0)
 model = cg.RhombohedralMultilayer(n_layers=3, params=params)
 
 k_lin = 0.28 * jnp.linspace(-0.5, 0.5, 400)

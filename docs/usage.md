@@ -31,16 +31,21 @@ print(H.shape)  # (4, 4)
 ```python
 import contimod_graphene as cg
 
-params = cg.GrapheneTBParameters.preset("tlg")
+params = cg.GrapheneTBParameters.preset("tlg").replace(U=0.0, Delta=0.0)
 model = cg.RhombohedralMultilayer(n_layers=3, params=params)
 
 H = model.hamiltonian(0.1, 0.1)
 print(H.shape)  # (6, 6)
 ```
 
+The built-in ABC/TLG preset itself carries finite asymmetry terms (`U=30.0` meV and
+`Delta=-1.15` meV), so standalone examples that want a symmetry-restored starting
+point should pin those explicitly as above.
+
 If you omit `params`, the model objects use family-appropriate built-in defaults:
 - `BernalMultilayer()` defaults to the BLG preset
-- `RhombohedralMultilayer()` defaults to the ABC/TLG preset
+- `RhombohedralMultilayer()` defaults to the ABC/TLG preset, including its built-in
+  `U=30.0` meV and `Delta=-1.15` meV offsets
 
 ### 3. Landau levels
 
@@ -58,7 +63,8 @@ print(H_LL.shape)
 import jax.numpy as jnp
 import contimod_graphene as cg
 
-model = cg.RhombohedralMultilayer(n_layers=3)
+params = cg.GrapheneTBParameters.preset("tlg").replace(U=0.0, Delta=0.0)
+model = cg.RhombohedralMultilayer(n_layers=3, params=params)
 
 k_lin = 0.28 * jnp.linspace(-0.5, 0.5, 400)
 ks = jnp.stack([k_lin, jnp.zeros_like(k_lin)], axis=-1)
@@ -72,7 +78,8 @@ bands = jnp.linalg.eigvalsh(Hs)
 ```python
 import contimod_graphene as cg
 
-abc = cg.RhombohedralMultilayer(n_layers=3)
+abc_params = cg.GrapheneTBParameters.preset("tlg").replace(U=0.0, Delta=0.0)
+abc = cg.RhombohedralMultilayer(n_layers=3, params=abc_params)
 H2_abc = abc.two_band_hamiltonian(0.02, -0.01)
 
 ab = cg.BernalMultilayer(n_layers=2)
@@ -102,7 +109,7 @@ Parameter objects are immutable mappings, so they work with both the new model s
 ```python
 import contimod_graphene as cg
 
-params = cg.GrapheneTBParameters.preset("tlg").replace(U=15.0, lambda1_eff=1.0)
+params = cg.GrapheneTBParameters.preset("tlg").replace(U=15.0, Delta=0.0, lambda1_eff=1.0)
 
 print(params["U"])
 print(dict(params))
@@ -118,10 +125,15 @@ Advanced users can still call the low-level modules directly:
 
 ```python
 from contimod_graphene import bernal, rhombohedral
-from contimod_graphene import graphene_params_BLG
+from contimod_graphene import graphene_params_BLG, graphene_params_TLG
 
 H_ab = bernal.hamiltonian(0.05, 0.0, n_layers=2, params=graphene_params_BLG)
-H_abc = rhombohedral.hamiltonian(0.05, 0.0, n_layers=3)
+H_abc = rhombohedral.hamiltonian(
+    0.05,
+    0.0,
+    n_layers=3,
+    params=graphene_params_TLG.replace(U=0.0, Delta=0.0),
+)
 ```
 
 These functions remain the computational core that the model objects wrap.
