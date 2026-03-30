@@ -34,6 +34,10 @@ def _clean_rhombohedral_params(preset: str) -> cg.GrapheneTBParameters:
     )
 
 
+def _delta_bernal_bilayer_params(Delta: float = 20.0) -> cg.GrapheneTBParameters:
+    return _clean_bernal_bilayer_params().replace(Delta=Delta)
+
+
 def test_zero_field_basis_helpers_expose_named_site_metadata():
     assert cg.basis.zero_field_orbital_labels(4) == ("A1", "B1", "A2", "B2", "A3", "B3", "A4", "B4")
     assert cg.basis.zero_field_orbital_index(4, 3, "B") == 5
@@ -112,6 +116,28 @@ def test_blg_two_band_matches_full_low_energy_branch():
         max_rel_err = max(max_rel_err, float(rel_err))
 
     assert max_rel_err < 2e-3
+
+
+def test_blg_delta_splits_low_energy_pair_and_tracks_two_band_asymmetry():
+    params = _delta_bernal_bilayer_params()
+    model = cg.BernalMultilayer(n_layers=2, params=params)
+
+    full_at_zero = np.linalg.eigvalsh(np.asarray(model.hamiltonian(0.0, 0.0)))
+    reduced_at_zero = np.linalg.eigvalsh(np.asarray(model.two_band_hamiltonian(0.0, 0.0)))
+
+    np.testing.assert_allclose(full_at_zero[1:3], np.array([-10.0, 10.0]), atol=1e-10, rtol=1e-10)
+    np.testing.assert_allclose(full_at_zero[1:3], reduced_at_zero, atol=1e-10, rtol=1e-10)
+
+    max_rel_err = 0.0
+    for k in np.logspace(-5, -2, 9):
+        full_low_energy = np.linalg.eigvalsh(np.asarray(model.hamiltonian(float(k), 0.0)))[1:3]
+        reduced_evals = np.linalg.eigvalsh(np.asarray(model.two_band_hamiltonian(float(k), 0.0)))
+        rel_err = np.max(
+            np.abs(full_low_energy - reduced_evals) / np.maximum(np.abs(full_low_energy), 1e-14)
+        )
+        max_rel_err = max(max_rel_err, float(rel_err))
+
+    assert max_rel_err < 3e-4
 
 
 @pytest.mark.parametrize("valley", ["K", "K'"])

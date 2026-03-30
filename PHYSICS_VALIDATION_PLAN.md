@@ -7,6 +7,7 @@ This note records the package-specific convention map and the first paper-backed
 - Zero-field full Hamiltonians use the orbital ordering `(A1, B1, A2, B2, ..., AN, BN)`.
 - The zero-field public API is valley-fixed. Tests at zero field therefore compare spectra and low-energy structure within that fixed convention rather than asserting explicit `K/K'` degeneracies.
 - Landau-level Hamiltonians use asymmetric LL bases that depend on the selected valley. LL tests compare spectra only, not raw matrix elements or basis vectors.
+- In the Bernal family, `Delta` is implemented as a full-model A/B sublattice asymmetry `(+Delta/2 on A, -Delta/2 on B)`, while `delta` remains the dimer versus non-dimer onsite offset and `U` remains the layer-asymmetry term.
 - First-wave analytic checks use explicit clean-subspace parameter overlays instead of package defaults:
   - BLG clean subset: `gamma2=gamma3=gamma4=gamma5=U=Delta=delta=0`
   - ABC clean subset (`N=3,4`): `gamma2=gamma3=gamma4=gamma5=U=Delta=delta=0`
@@ -35,7 +36,7 @@ These are implemented in [tests/test_physics_validation.py](/Users/wolft/Dev/con
 
 ## Deferred / Slower Validation
 
+- Bernal finite-`Delta` coverage currently stops at bilayer zero-field agreement with the package two-band model. Paper-backed finite-`Delta` multilayer and LL validations remain future work.
 - ABA trilayer mirror-parity block tests remain deferred until the package exposes an explicit mirror/parity basis transform or projector helper.
 - Zero-field valley-degeneracy tests remain deferred because the zero-field public Hamiltonians do not expose a valley switch.
 - Bilayer finite-`gamma3` Lifshitz topology, ABA modulo-3 LL anticrossings, and ABC low-field LL triplets belong in a slower regression tier rather than the default fast suite.
-- The Bernal full zero-field kernel still ignores `Delta` even though the bilayer two-band reduction uses it. That is a model-surface inconsistency worth resolving before adding paper-backed finite-asymmetry tests.

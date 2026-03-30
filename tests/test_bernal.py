@@ -42,5 +42,16 @@ class TestBernal(unittest.TestCase):
         # Check hermiticity
         self.assertTrue(jnp.allclose(h_ll_mat, h_ll_mat.T.conj()), "LL Hamiltonian is not Hermitian")
 
+    def test_zero_field_delta_enters_as_global_sublattice_asymmetry(self):
+        params = dict(self.params)
+        params.update({"gamma2": 0.0, "gamma3": 0.0, "gamma4": 0.0, "gamma5": 0.0, "delta": 0.0, "Delta": 18.0})
+
+        h_mat = bernal.hamiltonian(0.0, 0.0, n_layers=3, params=params)
+        np.testing.assert_allclose(
+            np.diag(np.asarray(h_mat)),
+            np.array([9.0, -9.0, 9.0, -9.0, 9.0, -9.0]),
+            atol=1e-10,
+        )
+
 if __name__ == '__main__':
     unittest.main()

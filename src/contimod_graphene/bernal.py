@@ -10,6 +10,49 @@ from contimod_graphene.utils import construct_ll_ops, extract_params
 # General Multilayer Graphene (Bernal / ABA)
 ##############################################################################
 
+
+def _bernal_zero_field_onsite_vector(
+    n_layers: int,
+    *,
+    U: float,
+    Delta: float,
+    delta: float,
+) -> jnp.ndarray:
+    """Return the per-orbital zero-field onsite energies for Bernal stacks."""
+    sublattice_shift = jnp.array([Delta / 2.0, -Delta / 2.0])
+
+    if n_layers <= 1:
+        return sublattice_shift
+
+    layer_potentials = U * jnp.linspace(1 / 2, -1 / 2, n_layers)
+    onsite = []
+    for i in range(n_layers):
+        dimer_shift = jnp.array([0.0, delta]) if i % 2 == 0 else jnp.array([delta, 0.0])
+        onsite.append(sublattice_shift + dimer_shift + layer_potentials[i])
+    return jnp.concatenate(onsite)
+
+
+def _bernal_ll_onsite_block(
+    N_A: int,
+    N_B: int,
+    *,
+    Delta: float,
+    delta: float,
+    odd_layer: bool,
+    Z_AB: np.ndarray,
+    Z_BA: np.ndarray,
+) -> np.ndarray:
+    """Return the per-layer LL onsite block for Bernal stacks."""
+    a_shift = (Delta / 2.0) * np.eye(N_A)
+    b_shift = (-Delta / 2.0) * np.eye(N_B)
+
+    if odd_layer:
+        b_shift = b_shift + delta * np.eye(N_B)
+    else:
+        a_shift = a_shift + delta * np.eye(N_A)
+
+    return np.block([[a_shift, Z_AB], [Z_BA, b_shift]])
+
 @partial(jax.jit, static_argnames=['n_layers'])
 def hamiltonian(kx: float, ky: float, n_layers: int = 3, params: dict = graphene_params_BLG) -> jnp.ndarray: # see 10.1103/PhysRevB.83.165443 or https://ar5iv.labs.arxiv.org/html/1404.1603
     """
@@ -19,6 +62,7 @@ def hamiltonian(kx: float, ky: float, n_layers: int = 3, params: dict = graphene
     - Intralayer hopping (gamma0)
     - Nearest-neighbor interlayer hopping (gamma1, v3, v4)
     - Next-nearest-neighbor interlayer hopping (gamma2, gamma5)
+    - Sublattice asymmetry (+Delta/2 on A, -Delta/2 on B)
     - On-site potential difference between dimer and non-dimer sites (delta)
     - Interlayer potential difference (U)
 
@@ -44,8 +88,10 @@ def hamiltonian(kx: float, ky: float, n_layers: int = 3, params: dict = graphene
     D = jnp.array([[0, v * jnp.conj(pi)], 
                     [0, 0]])
 
+    onsite = _bernal_zero_field_onsite_vector(n_layers, U=U, Delta=Delta, delta=delta)
+
     if n_layers < 2:
-        return D + D.T.conj()
+        return D + D.T.conj() + jnp.diag(onsite)
 
     # Interlayer blocks
     # V_odd (1->2, 3->4...): AB stacking
@@ -90,28 +136,8 @@ def hamiltonian(kx: float, ky: float, n_layers: int = 3, params: dict = graphene
             
     M = jnp.block(blocks)
     M = M + M.conj().T
-    
-    # Add on-site potentials (delta)
-    # Odd layers (0, 2...): A (non-dimer) -> 0, B (dimer) -> delta
-    # Even layers (1, 3...): A (dimer) -> delta, B (non-dimer) -> 0
-    
-    delta_odd = jnp.diag(jnp.array([0.0, delta]))
-    delta_even = jnp.diag(jnp.array([delta, 0.0]))
-    
-    diags = []
-    for i in range(n_layers):
-        if i % 2 == 0:
-            diags.append(delta_odd)
-        else:
-            diags.append(delta_even)
-            
-    M_delta = jax.scipy.linalg.block_diag(*diags)
-    M = M + M_delta
-    
-    # Add U potential
-    M = M + jnp.kron(jnp.diag(U*jnp.linspace(1/ 2, -1/ 2, n_layers)), jnp.eye(2))
 
-    return M
+    return M + jnp.diag(onsite)
 
 def hamiltonian_LL(B: float, n_layers: int = 3, n_cut: int = 50, flip_valley: bool = False, params: dict = graphene_params_BLG) -> np.ndarray:
     """
@@ -147,6 +173,7 @@ def hamiltonian_LL(B: float, n_layers: int = 3, n_cut: int = 50, flip_valley: bo
     γ2  = p("gamma2")
     γ5  = p("gamma5")
     U   = p("U")
+    Delta = p("Delta")
     delta = p("delta")
 
     # Choose LL dimensions per valley:
@@ -264,25 +291,19 @@ def hamiltonian_LL(B: float, n_layers: int = 3, n_cut: int = 50, flip_valley: bo
     M = np.block(blocks)
     M = M + M.conj().T
     
-    # Add on-site potentials (delta)
-    # Odd layers: A->0, B->delta
-    delta_odd_AA = np.zeros((N_A, N_A))
-    delta_odd_BB = delta * np.eye(N_B)
-    delta_odd_block = np.block([[delta_odd_AA, Z_AB],
-                                [Z_BA, delta_odd_BB]])
-                                
-    # Even layers: A->delta, B->0
-    delta_even_AA = delta * np.eye(N_A)
-    delta_even_BB = np.zeros((N_B, N_B))
-    delta_even_block = np.block([[delta_even_AA, Z_AB],
-                                 [Z_BA, delta_even_BB]])
-                                 
     diags = []
     for i in range(n_layers):
-        if i % 2 == 0:
-            diags.append(delta_odd_block)
-        else:
-            diags.append(delta_even_block)
+        diags.append(
+            _bernal_ll_onsite_block(
+                N_A,
+                N_B,
+                Delta=Delta,
+                delta=delta,
+                odd_layer=(i % 2 == 0),
+                Z_AB=Z_AB,
+                Z_BA=Z_BA,
+            )
+        )
             
     M_delta = jsp.linalg.block_diag(*diags)
     M += M_delta
