@@ -1,8 +1,9 @@
 """
-contimod_graphene: Helper package for contimod.
+contimod_graphene: Standalone multilayer graphene Hamiltonians and utilities.
 
-This package provides Hamiltonian construction tools for multilayer graphene systems,
-including Bernal (ABA) and Rhombohedral (ABC) stacking.
+This package provides reusable low-level graphene-model tools, including
+Bernal (ABA) and Rhombohedral (ABC) Hamiltonians, parameter sets, basis
+metadata, and symmetry helpers.
 """
 
 from .params import graphene_params, graphene_params_TLG, graphene_params_BLG, graphene_params_4LG

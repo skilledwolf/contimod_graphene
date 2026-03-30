@@ -1,7 +1,7 @@
 Welcome to contimod_graphene
-==============================
+============================
 
-**contimod_graphene** is a Python package for constructing tight-binding Hamiltonians for multilayer graphene systems. It is designed to be fast and easy to use, leveraging JAX for performance.
+**contimod_graphene** is a standalone Python package for constructing tight-binding Hamiltonians for multilayer graphene systems. It is designed to be fast and easy to use, leveraging JAX for performance.
 
 Features
 --------

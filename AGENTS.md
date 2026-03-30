@@ -1,7 +1,7 @@
 # contimod_graphene Agent Guide
 
 ## Mission
-- `contimod_graphene` is the low-level multilayer-graphene model package in this repo family.
+- `contimod_graphene` is a standalone multilayer-graphene model package in this repo family.
 - The standing goal is to make it a clean, trustworthy, reusable package for Bernal and rhombohedral graphene Hamiltonians, parameter sets, basis metadata, and related single-particle helpers.
 - Prefer a crisp boundary: `contimod_graphene` should own low-level graphene modeling primitives, while `contimod` should own discretization, mesh/state containers, and many-body workflows unless there is a strong reason to move a reusable piece down here.
 
@@ -38,6 +38,6 @@
 - Prefer conventional commit messages such as `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, or `chore:`.
 
 ## Near-Term Direction
-- Clarify whether this package remains `contimod`-branded or becomes a more independent graphene-model package in its own right.
+- Strengthen the package as a standalone graphene-model library that can be used directly, with `contimod` treated as one downstream consumer rather than the package's reason for existence.
 - Keep docs/examples usable without assuming `contimod`, except where a document is explicitly about downstream integration.
 - Be conservative about adding optional dependencies: they should unlock a clear surface such as BZ/path helpers, plotting helpers, or symmetry classification.

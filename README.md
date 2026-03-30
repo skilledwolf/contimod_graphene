@@ -1,10 +1,23 @@
-# contimod_graphene: Helper package for contimod
+# contimod_graphene
 
-`contimod_graphene` provides Hamiltonian construction tools for multilayer graphene systems, specifically supporting:
+`contimod_graphene` is a standalone Python package for multilayer graphene Hamiltonians and related single-particle utilities.
+
+It is designed to be useful directly in its own right, with `contimod` treated as one downstream consumer rather than a required companion package.
+
+Current scope includes:
 - **Bernal (ABA) stacking**
 - **Rhombohedral (ABC) stacking**
+- JSON-backed parameter sets
+- Basis and symmetry helpers
+- JAX-friendly batched Hamiltonian evaluation
 
 It includes functionality for both zero-field Hamiltonians and Landau Level (LL) Hamiltonians.
+
+## Relationship To `contimod`
+
+`contimod_graphene` owns the low-level graphene-model layer: Hamiltonian builders, parameter presets, basis metadata, and related lightweight helpers.
+
+`contimod` builds on top of that layer for discretization, mesh/state containers, and many-body workflows such as SCF, susceptibility, TDHF, and superconductivity. Using `contimod` is optional, not required.
 
 ## Modules
 
@@ -26,7 +39,7 @@ JSON-backed parameter sets for graphene tight-binding models (see `data/params.j
 - `list_sets()`: List available presets.
 
 ### `contimod_graphene.utils`
-Helper functions for Hamiltonian construction.
+Utility functions for Hamiltonian construction and evaluation.
 - `extract_params(params, keys)`: Extract specific parameters from a dictionary.
 - `layer_coordinates(n_layers)`: Get z-coordinates for layers.
 - `sublattice_coordinates(n_layers)`: Get sublattice indices.
@@ -34,7 +47,7 @@ Helper functions for Hamiltonian construction.
 - `batch_hamiltonian(h_fn, jit=True)`: Vectorize a single-k Hamiltonian over an array of k-points.
 
 ### `contimod_graphene.basis`
-Basis helpers (layer/sublattice coordinates and operator construction) used by downstream wrappers.
+Basis helpers for layer/sublattice coordinates and operator construction.
 
 ## Installation
 
