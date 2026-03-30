@@ -10,6 +10,14 @@ from typing import Iterable, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
+# Local Pauli matrices (kept here to avoid depending on contimod.utils)
+PAULI = (
+    np.array([[1, 0], [0, 1]], dtype=complex),
+    np.array([[0, 1], [1, 0]], dtype=complex),
+    np.array([[0, -1j], [1j, 0]], dtype=complex),
+    np.array([[1, 0], [0, -1]], dtype=complex),
+)
+
 
 def layer_coordinates(n_layers: int) -> np.ndarray:
     """Return per-orbital layer index (A,B per layer)."""
@@ -51,11 +59,19 @@ def build_ops(
 
     def valley_op(i: int) -> np.ndarray:
         assert valleyful, "Valley operator not defined in projected subspace."
-        return paulikron_local(0 if spinful else None, i, np.identity(matrixdim))
+        return paulikron_local(
+            PAULI[0] if spinful else None,
+            PAULI[int(i)],
+            np.identity(matrixdim),
+        )
 
     def spin_op(i: int) -> np.ndarray:
         assert spinful, "Spin operator not defined in projected subspace."
-        return paulikron_local(i, 0 if valleyful else None, np.identity(matrixdim))
+        return paulikron_local(
+            PAULI[int(i)],
+            PAULI[0] if valleyful else None,
+            np.identity(matrixdim),
+        )
 
     ops["valley_op"] = valley_op
     ops["spin_op"] = spin_op

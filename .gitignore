@@ -5,6 +5,8 @@
 *.pickle
 temp_*.py
 
+rsync_to_lonestar.sh
+
 .python-version
 .devcontainer/*
 .idea/*
