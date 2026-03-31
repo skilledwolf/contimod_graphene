@@ -115,6 +115,52 @@ def _aba_trilayer_bilayer_like_w_correction(
     )
 
 
+def _aba_trilayer_xi_for_valley(valley: str) -> float:
+    return -1.0 if valley == "K" else 1.0
+
+
+def _aba_trilayer_bilayer_like_low_pair_formula(
+    params: cg.GrapheneTBParameters,
+    *,
+    B: float,
+    valley: str,
+) -> tuple[float, float]:
+    xi = _aba_trilayer_xi_for_valley(valley)
+    gamma0 = float(params["gamma0"])
+    gamma1 = float(params["gamma1"])
+    gamma2 = float(params["gamma2"])
+    gamma4 = float(params["gamma4"])
+    gamma5 = float(params["gamma5"])
+    delta = float(params["delta"])
+
+    l_B = 104.29 / np.sqrt(B)
+    gamma_B = np.sqrt(2.0) * (np.sqrt(3.0) * gamma0 / 2.0) / l_B
+
+    anchor = 0.25 * (1.0 + xi) * gamma2
+    shift = (
+        0.25 * (1.0 + xi) * gamma5
+        + delta
+        + 4.0 * gamma1 * gamma4 / gamma0
+    ) * gamma_B**2 / (2.0 * gamma1**2)
+    return anchor, anchor + shift
+
+
+def _aba_trilayer_even_block_low_pair(
+    even_block: np.ndarray,
+    *,
+    params: cg.GrapheneTBParameters,
+    B: float,
+    valley: str,
+) -> tuple[float, float]:
+    evals = np.linalg.eigvalsh(even_block)
+    anchor_target, partner_target = _aba_trilayer_bilayer_like_low_pair_formula(params, B=B, valley=valley)
+
+    anchor_idx = int(np.argmin(np.abs(evals - anchor_target)))
+    remaining = np.delete(np.arange(evals.size), anchor_idx)
+    partner_idx = int(remaining[np.argmin(np.abs(evals[remaining] - partner_target))])
+    return float(evals[anchor_idx]), float(evals[partner_idx])
+
+
 def _aba_trilayer_ll_mirror_blocks(
     model: cg.BernalMultilayer,
     *,
@@ -456,6 +502,51 @@ def test_aba_trilayer_source_aligned_even_ll_block_matches_bilayerlike_h2_block(
     )
 
     np.testing.assert_allclose(even_block, expected_block, atol=5e-5, rtol=1e-10)
+
+
+@pytest.mark.parametrize("valley", ["K", "K'"])
+@pytest.mark.parametrize("B", [1.0, 2.0, 5.0])
+def test_aba_trilayer_source_aligned_gamma3_zero_bilayerlike_low_pair_matches_reduced_formula(
+    B: float,
+    valley: str,
+):
+    params = _aba_trilayer_source_aligned_params(U=0.0, gamma3=0.0)
+    model = cg.BernalMultilayer(n_layers=3, params=params)
+
+    expected_anchor, expected_partner = _aba_trilayer_bilayer_like_low_pair_formula(params, B=B, valley=valley)
+    reference_pair: tuple[float, float] | None = None
+
+    for n_cut in (20, 30):
+        _, _, even_block, _ = _aba_trilayer_ll_mirror_blocks(
+            model,
+            B=B,
+            n_cut=n_cut,
+            valley=valley,
+        )
+        anchor, partner = _aba_trilayer_even_block_low_pair(
+            even_block,
+            params=params,
+            B=B,
+            valley=valley,
+        )
+
+        np.testing.assert_allclose(anchor, expected_anchor, atol=1e-8, rtol=1e-10)
+        np.testing.assert_allclose(
+            partner - anchor,
+            expected_partner - expected_anchor,
+            atol=0.12,
+            rtol=0.2,
+        )
+
+        if reference_pair is None:
+            reference_pair = (anchor, partner)
+        else:
+            np.testing.assert_allclose(
+                np.array((anchor, partner)),
+                np.array(reference_pair),
+                atol=5e-5,
+                rtol=1e-10,
+            )
 
 
 def test_aba_trilayer_mirror_parity_blocks_decouple_and_u_breaks_them():
