@@ -553,6 +553,31 @@ def test_abc_clean_ll_has_n_zero_modes_per_valley(n_layers: int, preset: str, va
     assert abs_evals[n_layers] > 1e-4
 
 
+@pytest.mark.parametrize(("n_layers", "preset", "expected_exponent"), [(3, "tlg", 1.5), (4, "4lg", 2.0)])
+def test_abc_clean_ll_lowest_positive_branch_scales_with_expected_field_exponent(
+    n_layers: int,
+    preset: str,
+    expected_exponent: float,
+):
+    params = _clean_rhombohedral_params(preset)
+    b_fields = np.array([0.75, 1.0, 1.5, 2.0, 3.0, 4.0])
+    slopes = []
+
+    for n_cut in (20, 30):
+        model = cg.RhombohedralMultilayer(n_layers=n_layers, params=params)
+        lowest_positive = []
+
+        for b_field in b_fields:
+            evals = np.linalg.eigvalsh(np.asarray(model.landau_level_hamiltonian(b_field, n_cut=n_cut, valley="K")))
+            positive_evals = evals[evals > 1e-10]
+            lowest_positive.append(float(positive_evals[0]))
+
+        slopes.append(float(np.polyfit(np.log(b_fields), np.log(lowest_positive), deg=1)[0]))
+
+    assert slopes[0] == pytest.approx(expected_exponent, abs=5e-2)
+    assert abs(slopes[1] - slopes[0]) < 1e-3
+
+
 def test_abc_trilayer_u_opens_gap_while_delta_shifts_low_energy_pair():
     clean_params = _clean_rhombohedral_params("tlg")
 
