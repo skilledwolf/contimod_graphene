@@ -37,10 +37,11 @@ The current fast physics-validation tier is:
 5. ABA trilayer clean-subspace mirror-sector spectra: the odd block matches a monolayer Dirac Hamiltonian and the even block matches the bilayer-like spectrum with `sqrt(2) * gamma1`.
 6. ABA trilayer clean-subspace LL structure: in the mirror basis, the odd block matches the monolayer LL Hamiltonian while the even block matches the bilayer-like LL Hamiltonian with `sqrt(2) * gamma1`.
 7. ABA trilayer full-parameter LL mirror structure: with the realistic ABA parameter set and `U=0`, the LL Hamiltonian still block-diagonalizes in the mirror basis, and finite `U` recouples the odd/even sectors.
-8. ABC trilayer and tetralayer outer-site zero modes at `k=0`.
-9. ABC trilayer and tetralayer `E ~ k^N` scaling plus low-energy agreement between the full and projected two-band models.
-10. Inversion-protected LL valley degeneracy for Bernal bilayer/tetralayer/hexalayer and rhombohedral trilayer/tetralayer, compared through sorted `K/K'` spectra rather than raw LL matrices. The Bernal even-layer checks explicitly use `U=0` and `Delta=0`.
-11. ABAB four-layer next-nearest-layer parity in zero field: the `1 -> 3` block carries `diag(gamma2/2, gamma5/2)` while the `2 -> 4` block carries `diag(gamma5/2, gamma2/2)`.
+8. ABA trilayer full-parameter monolayerlike LL block content: in the mirror basis, the odd block exactly matches the monolayerlike block `H_0` from Koshino-McCann once the package parameters are translated as `Delta_eff = Delta - gamma2` and `delta_eff = delta - (gamma2 + gamma5)/2`.
+9. ABC trilayer and tetralayer outer-site zero modes at `k=0`.
+10. ABC trilayer and tetralayer `E ~ k^N` scaling plus low-energy agreement between the full and projected two-band models.
+11. Inversion-protected LL valley degeneracy for Bernal bilayer/tetralayer/hexalayer and rhombohedral trilayer/tetralayer, compared through sorted `K/K'` spectra rather than raw LL matrices. The Bernal even-layer checks explicitly use `U=0` and `Delta=0`.
+12. ABAB four-layer next-nearest-layer parity in zero field: the `1 -> 3` block carries `diag(gamma2/2, gamma5/2)` while the `2 -> 4` block carries `diag(gamma5/2, gamma2/2)`.
 
 These are implemented in [tests/test_physics_validation.py](/Users/wolft/Dev/contimod_graphene/tests/test_physics_validation.py) and [tests/test_bernal.py](/Users/wolft/Dev/contimod_graphene/tests/test_bernal.py), and rely on the zero-field basis helpers in [src/contimod_graphene/basis.py](/Users/wolft/Dev/contimod_graphene/src/contimod_graphene/basis.py), including the explicit ABA trilayer mirror-basis operator, zero-field unitary, generic layer/block unitaries, and odd/even projectors.
 
@@ -49,6 +50,6 @@ These are implemented in [tests/test_physics_validation.py](/Users/wolft/Dev/con
 - Bernal finite-`Delta` coverage currently stops at bilayer zero-field agreement with the package two-band model. Paper-backed finite-`Delta` multilayer and LL validations remain future work.
 - Rhombohedral `Delta` is now validated as a distinct even layer-offset term relative to `U`, but only the trilayer meaning is directly paper-backed. The scalar `N>3` extension remains a package convention.
 - The rhombohedral `delta` slot is intentionally unused for now. The ABC kernels accept it only for shared-parameter compatibility, and tests pin that it does not affect zero-field, two-band, or LL outputs until a source-backed onsite meaning is adopted.
-- ABA trilayer detailed full-parameter LL-shape regressions remain deferred. The fast suite now covers exact mirror-basis decoupling at realistic ABA parameters and clean monolayer-like / bilayer-like LL decomposition, but not trigonal-warping-driven crossings or finite-parameter anticrossings yet.
+- ABA trilayer detailed full-parameter LL-shape regressions remain deferred. The fast suite now covers exact mirror-basis decoupling at realistic ABA parameters and the exact monolayerlike odd-block content, but not the approximate bilayerlike family ordering, trigonal-warping-driven crossings, or finite-parameter anticrossings yet. The current blocker is a still-unresolved mapping between the paper's valley index `xi = ±1` and the package's `K/K'` labels across the extracted odd/even mirror blocks, which makes the low-energy bilayerlike pair too ambiguous to encode safely without another source-backed review.
 - Zero-field valley-degeneracy tests remain deferred because the zero-field public Hamiltonians do not expose a valley switch.
 - Bilayer finite-`gamma3` Lifshitz topology, ABA modulo-3 LL anticrossings, and ABC low-field LL triplets belong in a slower regression tier rather than the default fast suite.

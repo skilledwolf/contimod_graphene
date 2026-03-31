@@ -62,6 +62,15 @@ def _full_even_n_bernal_params() -> cg.GrapheneTBParameters:
     return cg.GrapheneTBParameters.preset("4lg").replace(U=0.0, Delta=0.0)
 
 
+def _aba_trilayer_monolayer_like_params(params: cg.GrapheneTBParameters) -> cg.GrapheneTBParameters:
+    gamma2 = float(params["gamma2"])
+    gamma5 = float(params["gamma5"])
+    return params.replace(
+        Delta=float(params["Delta"]) - gamma2,
+        delta=float(params["delta"]) - 0.5 * (gamma2 + gamma5),
+    )
+
+
 def _aba_trilayer_ll_mirror_blocks(
     model: cg.BernalMultilayer,
     *,
@@ -347,6 +356,31 @@ def test_aba_trilayer_full_parameter_ll_mirror_blocks_decouple_and_u_breaks_them
         rtol=1e-10,
     )
     assert np.linalg.norm(biased_off_block) / biased_scale > 1e-3
+
+
+@pytest.mark.parametrize("valley", ["K", "K'"])
+@pytest.mark.parametrize("B", [0.5, 1.0, 2.0, 5.0])
+def test_aba_trilayer_full_parameter_odd_ll_block_matches_monolayerlike_block(
+    B: float,
+    valley: str,
+):
+    params = _aba_trilayer_params(U=0.0)
+    trilayer_model = cg.BernalMultilayer(n_layers=3, params=params)
+    monolayerlike_model = cg.BernalMultilayer(
+        n_layers=1,
+        params=_aba_trilayer_monolayer_like_params(params),
+    )
+
+    n_cut = 20
+    _, odd_block, _, _ = _aba_trilayer_ll_mirror_blocks(
+        trilayer_model,
+        B=B,
+        n_cut=n_cut,
+        valley=valley,
+    )
+    monolayerlike_ll = monolayerlike_model.landau_level_hamiltonian(B, n_cut=n_cut, valley=valley)
+
+    np.testing.assert_allclose(odd_block, monolayerlike_ll, atol=5e-5, rtol=1e-10)
 
 
 def test_aba_trilayer_mirror_parity_blocks_decouple_and_u_breaks_them():
