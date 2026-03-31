@@ -36,6 +36,14 @@ contimod\_graphene.utils module
    :undoc-members:
    :show-inheritance:
 
+contimod\_graphene.landau module
+--------------------------------
+
+.. automodule:: contimod_graphene.landau
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

@@ -24,6 +24,7 @@ from . import bernal
 from . import basis
 from . import symmetry
 from . import models
+from . import landau
 
 try:
     from ._version import version as __version__
@@ -46,6 +47,7 @@ __all__ = [
     "bernal",
     "basis",
     "symmetry",
+    "landau",
     "graphene_params",
     "graphene_params_TLG",
     "graphene_params_BLG",

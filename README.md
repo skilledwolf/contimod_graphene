@@ -104,6 +104,7 @@ The low-level kernel modules remain available for advanced use, JAX-focused work
 - `contimod_graphene.params`
 - `contimod_graphene.basis`
 - `contimod_graphene.symmetry`
+- `contimod_graphene.landau`
 - `contimod_graphene.utils`
 
 ## Installation
