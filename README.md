@@ -2,6 +2,8 @@
 
 `contimod_graphene` is a standalone Python package for multilayer graphene tight-binding Hamiltonians, parameter sets, basis metadata, and related single-particle utilities.
 
+This is a public preview release series. The package is still pre-1.0, so APIs, parameter conventions, and preset details may still change between minor releases; pin an exact version if you need stable downstream behavior.
+
 Current scope includes:
 - **Bernal (ABA) stacking**
 - **Rhombohedral (ABC) stacking**
