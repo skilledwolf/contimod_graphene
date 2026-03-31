@@ -58,6 +58,20 @@ def _delta_bernal_bilayer_params(Delta: float = 20.0) -> cg.GrapheneTBParameters
     return _clean_bernal_bilayer_params().replace(Delta=Delta)
 
 
+def _aba_trilayer_ll_mirror_blocks(
+    model: cg.BernalMultilayer,
+    *,
+    B: float,
+    n_cut: int,
+    valley: str,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    h_ll = model.landau_level_hamiltonian(B, n_cut=n_cut, valley=valley)
+    d_layer = h_ll.shape[0] // 3
+    mirror_block_unitary = cg.basis.bernal_trilayer_mirror_block_unitary(d_layer)
+    h_mirror = mirror_block_unitary.conj().T @ h_ll @ mirror_block_unitary
+    return h_ll, h_mirror[:d_layer, :d_layer], h_mirror[d_layer:, d_layer:], h_mirror[:d_layer, d_layer:]
+
+
 def test_zero_field_basis_helpers_expose_named_site_metadata():
     assert cg.basis.zero_field_orbital_labels(4) == ("A1", "B1", "A2", "B2", "A3", "B3", "A4", "B4")
     assert cg.basis.zero_field_orbital_index(4, 3, "B") == 5
@@ -226,22 +240,56 @@ def test_aba_trilayer_clean_ll_mirror_blocks_match_monolayer_and_bilayer_like_mo
     )
 
     n_cut = 12
-    trilayer_ll = trilayer_model.landau_level_hamiltonian(B, n_cut=n_cut, valley=valley)
+    trilayer_ll, odd_block, even_block, off_block = _aba_trilayer_ll_mirror_blocks(
+        trilayer_model,
+        B=B,
+        n_cut=n_cut,
+        valley=valley,
+    )
     monolayer_ll = monolayer_model.landau_level_hamiltonian(B, n_cut=n_cut, valley=valley)
     bilayer_like_ll = bilayer_like_model.landau_level_hamiltonian(B, n_cut=n_cut, valley=valley)
 
-    d_layer = trilayer_ll.shape[0] // 3
-    mirror_block_unitary = cg.basis.bernal_trilayer_mirror_block_unitary(d_layer)
-    trilayer_mirror = mirror_block_unitary.conj().T @ trilayer_ll @ mirror_block_unitary
-
-    odd_block = trilayer_mirror[:d_layer, :d_layer]
-    even_block = trilayer_mirror[d_layer:, d_layer:]
-    off_block = trilayer_mirror[:d_layer, d_layer:]
     scale = max(np.linalg.norm(trilayer_ll), 1.0)
 
     np.testing.assert_allclose(odd_block, monolayer_ll, atol=2e-5, rtol=1e-10)
     np.testing.assert_allclose(even_block, bilayer_like_ll, atol=1e-4, rtol=1e-10)
     assert np.linalg.norm(off_block) / scale < 1e-7
+
+
+@pytest.mark.parametrize("valley", ["K", "K'"])
+@pytest.mark.parametrize("B", [0.5, 1.0, 2.0, 5.0])
+def test_aba_trilayer_full_parameter_ll_mirror_blocks_decouple_and_u_breaks_them(
+    B: float,
+    valley: str,
+):
+    symmetric_model = cg.BernalMultilayer(n_layers=3, params=_aba_trilayer_params(U=0.0))
+    biased_model = cg.BernalMultilayer(n_layers=3, params=_aba_trilayer_params(U=30.0))
+
+    n_cut = 12
+    h_ll_sym, odd_block, even_block, off_block = _aba_trilayer_ll_mirror_blocks(
+        symmetric_model,
+        B=B,
+        n_cut=n_cut,
+        valley=valley,
+    )
+    h_ll_biased, _, _, biased_off_block = _aba_trilayer_ll_mirror_blocks(
+        biased_model,
+        B=B,
+        n_cut=n_cut,
+        valley=valley,
+    )
+
+    sym_scale = max(np.linalg.norm(h_ll_sym), 1.0)
+    biased_scale = max(np.linalg.norm(h_ll_biased), 1.0)
+
+    assert np.linalg.norm(off_block) / sym_scale < 1e-7
+    np.testing.assert_allclose(
+        np.linalg.eigvalsh(h_ll_sym),
+        np.sort(np.concatenate([np.linalg.eigvalsh(odd_block), np.linalg.eigvalsh(even_block)])),
+        atol=1e-4,
+        rtol=1e-10,
+    )
+    assert np.linalg.norm(biased_off_block) / biased_scale > 1e-3
 
 
 def test_aba_trilayer_mirror_parity_blocks_decouple_and_u_breaks_them():
