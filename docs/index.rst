@@ -3,21 +3,22 @@ Welcome to contimod_graphene
 
 **contimod_graphene** is a standalone Python package for multilayer graphene Hamiltonians, parameter sets, basis metadata, and related single-particle utilities.
 
-The recommended entry point is the top-level API:
+If you only read one page, start with the user guide: it gives the shortest working recipes, the core equations, and concrete output examples.
+
+The recommended API entry points are:
 
 - ``GrapheneTBParameters``
 - ``BernalMultilayer``
 - ``RhombohedralMultilayer``
 
-Low-level kernel modules remain available for advanced use, but the user guide below leads with the standalone model/parameter surface rather than downstream ``contimod`` integration.
+Low-level kernel modules remain available for advanced use, but the docs below lead with the standalone model/parameter surface rather than downstream ``contimod`` integration.
 
-Features
---------
+Start Here
+----------
 
-*   **Bernal (ABA) Stacking**: Support for N-layer Bernal stacked systems.
-*   **Rhombohedral (ABC) Stacking**: Support for N-layer Rhombohedral stacked systems.
-*   **Landau Levels**: Construction of Hamiltonians in a magnetic field using the Landau Level basis.
-*   **Effective Models**: 2-band effective Hamiltonians for ABC systems.
+- ``usage``: quickest API path, equations, conventions, and representative outputs
+- ``examples``: figure-producing scripts and expected artifacts
+- ``installation``: install and local-development notes
 
 Documentation
 -------------

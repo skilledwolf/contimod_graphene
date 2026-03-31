@@ -31,25 +31,33 @@ def main(
 
     h0 = abc.hamiltonian(0.1, 0.0)
     h2 = abc.two_band_hamiltonian(0.1, 0.0)
+    sample_h0 = np.linalg.eigvalsh(np.asarray(abc.hamiltonian(0.02, 0.0)))
+    sample_h2 = np.linalg.eigvalsh(np.asarray(abc.two_band_hamiltonian(0.02, 0.0)))
 
     k_lin = 0.28 * jnp.linspace(-0.5, 0.5, int(num_k))
     ks = jnp.stack([k_lin, jnp.zeros_like(k_lin)], axis=-1)
     bands = jnp.linalg.eigvalsh(abc.hamiltonian_batch(ks))
 
     h_ll = ab.landau_level_hamiltonian(10.0, n_cut=int(ll_n_cut), valley="K")
+    ll_eigs = np.linalg.eigvalsh(np.asarray(h_ll))
+    ll_near_zero = np.sort(ll_eigs[np.argsort(np.abs(ll_eigs))[: min(8, ll_eigs.size)]])
 
     summary = {
         "parameter_preset": params.preset_name,
         "available_presets": cg.list_parameter_sets(),
         "abc_u_mev": float(params["U"]),
         "abc_delta_layer_offset_mev": float(params["Delta"]),
+        "sample_k_point": [0.02, 0.0],
+        "sample_zero_field_eigs_mev": [round(float(x), 3) for x in sample_h0],
+        "sample_two_band_eigs_mev": [round(float(x), 3) for x in sample_h2],
         "zero_field_shape": list(np.asarray(h0).shape),
         "two_band_shape": list(np.asarray(h2).shape),
         "band_shape": list(np.asarray(bands).shape),
         "landau_level_shape": list(np.asarray(h_ll).shape),
+        "sample_ll_near_zero_mev": [round(float(x), 3) for x in ll_near_zero],
         "band_extrema_mev": [
-            float(np.min(np.asarray(bands))),
-            float(np.max(np.asarray(bands))),
+            round(float(np.min(np.asarray(bands))), 3),
+            round(float(np.max(np.asarray(bands))), 3),
         ],
     }
 

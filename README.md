@@ -1,8 +1,6 @@
 # contimod_graphene
 
-`contimod_graphene` is a standalone Python package for multilayer graphene Hamiltonians and related single-particle utilities.
-
-It is designed to be useful directly in its own right, with `contimod` treated as one downstream consumer rather than a required companion package.
+`contimod_graphene` is a standalone Python package for multilayer graphene tight-binding Hamiltonians, parameter sets, basis metadata, and related single-particle utilities.
 
 Current scope includes:
 - **Bernal (ABA) stacking**
@@ -12,37 +10,46 @@ Current scope includes:
 - Basis and symmetry helpers
 - JAX-friendly batched Hamiltonian evaluation
 
-It includes functionality for both zero-field Hamiltonians and Landau Level (LL) Hamiltonians.
+It includes both zero-field Hamiltonians and Landau-level (LL) Hamiltonians.
 
-The maintained standalone starting points are:
+The maintained starting points are:
 - the top-level public API shown below
 - [docs/usage.md](/Users/wolft/Dev/contimod_graphene/docs/usage.md)
 - [examples/standalone_gallery.py](/Users/wolft/Dev/contimod_graphene/examples/standalone_gallery.py)
 - [examples/standalone_quickstart.py](/Users/wolft/Dev/contimod_graphene/examples/standalone_quickstart.py)
 
-## Relationship To `contimod`
-
-`contimod_graphene` owns the low-level graphene-model layer: Hamiltonian builders, parameter presets, basis metadata, and related lightweight helpers.
-
-`contimod` builds on top of that layer for discretization, mesh/state containers, and many-body workflows such as SCF, susceptibility, TDHF, and superconductivity. Using `contimod` is optional, not required.
+For examples/tests on this machine, prefer `JAX_PLATFORMS=cpu`; the Apple Metal backend still hits known JAX failures in this repo.
 
 ## Quick Start
 
-The canonical user-facing surface is the top-level parameter/model API:
+For an ABC-trilayer Hamiltonian, its low-energy 2-band reduction, and a bilayer LL matrix:
 
 ```python
+import numpy as np
 import contimod_graphene as cg
 
-params = cg.GrapheneTBParameters.preset("tlg").replace(U=20.0)
-model = cg.RhombohedralMultilayer(n_layers=3, params=params)
+params = cg.GrapheneTBParameters.preset("tlg").replace(U=20.0, Delta=0.0)
+abc = cg.RhombohedralMultilayer(n_layers=3, params=params)
+ab = cg.BernalMultilayer(n_layers=2)
 
-H = model.hamiltonian(0.1, 0.0)
-Hs = model.hamiltonian_batch([[0.0, 0.0], [0.1, 0.0]])
-Hll = model.landau_level_hamiltonian(10.0, n_cut=40, valley="K")
-H2 = model.two_band_hamiltonian(0.1, 0.0)
+print(abc.hamiltonian(0.1, 0.0).shape)
+print(np.round(np.linalg.eigvalsh(np.asarray(abc.two_band_hamiltonian(0.02, 0.0))), 3))
+print(ab.landau_level_hamiltonian(10.0, n_cut=6, valley="K").shape)
 ```
 
-Runnable standalone examples live in `examples/standalone_gallery.py`, and the docs mirror that surface in `docs/usage.md` and `docs/examples.md`.
+```text
+(6, 6)
+[-10.178  11.608]
+(22, 22)
+```
+
+If you want the maintained script rather than a pasted snippet:
+
+```bash
+JAX_PLATFORMS=cpu python examples/standalone_quickstart.py
+```
+
+The built-in ABC/TLG preset carries `U=30.0` meV and `Delta=-1.15` meV. The quickstart pins `Delta=0.0` so the example isolates the outer-layer bias `U`.
 
 The main public entry points are:
 - `GrapheneTBParameters`
@@ -55,7 +62,33 @@ Physicist-friendly aliases are also available:
 - `ABAMultilayer`
 - `ABCMultilayer`
 
-For a slightly longer walkthrough, see [docs/usage.md](/Users/wolft/Dev/contimod_graphene/docs/usage.md). For maintained example material, start with [examples/standalone_quickstart.py](/Users/wolft/Dev/contimod_graphene/examples/standalone_quickstart.py) and [examples/README.md](/Users/wolft/Dev/contimod_graphene/examples/README.md).
+For a slightly longer walkthrough with equations, conventions, and more outputs, see [docs/usage.md](/Users/wolft/Dev/contimod_graphene/docs/usage.md). For maintained example material, start with [examples/standalone_quickstart.py](/Users/wolft/Dev/contimod_graphene/examples/standalone_quickstart.py), [docs/examples.md](/Users/wolft/Dev/contimod_graphene/docs/examples.md), and [examples/README.md](/Users/wolft/Dev/contimod_graphene/examples/README.md).
+
+## Physics At A Glance
+
+The package exposes three common surfaces:
+
+$$
+H(\mathbf{k}) \psi_{n\mathbf{k}} = E_n(\mathbf{k}) \psi_{n\mathbf{k}}
+$$
+
+$$
+H^{ABC_N}_{2\mathrm{band}} \propto
+\begin{pmatrix}
+0 & (\pi^\dagger)^N \\
+\pi^N & 0
+\end{pmatrix},
+\qquad E \propto k^N
+$$
+
+$$
+\dim H_{\mathrm{LL}} = n_{\mathrm{layers}} \left(2 n_{\mathrm{cut}} - 1\right)
+$$
+
+Useful parameter conventions:
+- Bernal `Delta` is the package A/B sublattice mass term, while Bernal `delta` is the dimer/non-dimer onsite offset.
+- Rhombohedral `Delta` matches the usual trilayer `Δ2` meaning for `n_layers=3`; for thicker stacks it is reused as a package-specific inversion-even layer-curvature parameter.
+- LL builders return dense matrices, so the size formula above matters quickly when you increase `n_cut`.
 
 ## Low-Level Modules
 
@@ -69,13 +102,26 @@ The low-level kernel modules remain available for advanced use, JAX-focused work
 
 ## Installation
 
-### Option 1 (developer install)
+### Use the package
+
+Install directly from GitHub:
+
+```bash
+pip install git+https://github.com/skilledwolf/contimod_graphene.git
+```
+
+Quick smoke check:
+
+```bash
+python -c "import contimod_graphene as cg; print(cg.list_parameter_sets())"
+```
+
+### Develop locally
 
 Clone the repository and install it in editable mode:
 ```bash
 pip install -e ".[dev]"
 ```
-This gives you the package locally as `import contimod_graphene as cg`.
 
 If you prefer `hatch`, create and enter the managed development environment with:
 ```bash
@@ -83,33 +129,19 @@ hatch env create
 hatch shell
 ```
 
-Quick import check:
+### Containerized Jupyter
+
+If you want a throwaway Jupyter environment, use `repo2docker`:
+
 ```bash
-python -c "import contimod_graphene as cg; print(cg.list_parameter_sets())"
+jupyter-repo2docker https://github.com/skilledwolf/contimod_graphene.git
 ```
 
-### Option 2 (GitHub install)
-
-If you only want to use the package, install it directly from GitHub:
-```bash
-pip install git+https://github.com/skilledwolf/contimod_graphene.git
-```
-This installs the same top-level import: `import contimod_graphene as cg`.
-
-### Option 3 (cross-platform)
-
-*Note: This method is not tested on all platforms. It may or may not fail on arm-based systems (such as Apple Silicon).*
-
-Third-party requirements:
- - Docker
- - repo2docker
-
-To spin up a containerized jupyter environment, run:
-```bash
-$ jupyter-repo2docker https://github.com/skilledwolf/contimod_graphene.git
-```
-
-While this is the fastest way to spin up a container, you can also containerize this package yourself.
+Requirements: Docker plus `repo2docker`. This path is convenient, but not tested on every platform.
 
 ## Credit 
 This package is developed and maintained by Dr. Tobias Wolf. Feel free to contact us, and please give us credit if you use this work. 
+
+## Downstream Note
+
+`contimod_graphene` is intended to stand on its own. A separate downstream package, `contimod`, builds on top of this model layer for discretization, mesh/state containers, and many-body workflows, but it is not required for normal use here.
