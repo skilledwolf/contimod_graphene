@@ -1,5 +1,9 @@
 # contimod_graphene
 
+[![PyPI](https://img.shields.io/pypi/v/contimod-graphene?include_prereleases&label=PyPI)](https://pypi.org/project/contimod-graphene/)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://tobiaswolf.net/contimod_graphene/)
+[![CI](https://github.com/skilledwolf/contimod_graphene/actions/workflows/ci.yml/badge.svg)](https://github.com/skilledwolf/contimod_graphene/actions/workflows/ci.yml)
+
 `contimod_graphene` is a standalone Python package for multilayer graphene tight-binding Hamiltonians, parameter sets, basis metadata, and related single-particle utilities.
 
 This is a public preview release series. The package is still pre-1.0, so APIs, parameter conventions, and preset details may still change between minor releases; pin an exact version if you need stable downstream behavior.
@@ -104,12 +108,10 @@ The low-level kernel modules remain available for advanced use, JAX-focused work
 
 ## Installation
 
-### Use the package
-
-Install directly from GitHub:
+Install from PyPI:
 
 ```bash
-pip install git+https://github.com/skilledwolf/contimod_graphene.git
+pip install contimod-graphene
 ```
 
 Quick smoke check:
@@ -118,32 +120,15 @@ Quick smoke check:
 python -c "import contimod_graphene as cg; print(cg.list_parameter_sets())"
 ```
 
-### Develop locally
+The distribution name on PyPI uses a hyphen, but the Python import remains `contimod_graphene`.
 
-Clone the repository and install it in editable mode:
-```bash
-pip install -e ".[dev]"
-```
-
-If you prefer `hatch`, create and enter the managed development environment with:
-```bash
-hatch env create
-hatch shell
-```
-
-### Containerized Jupyter
-
-If you want a throwaway Jupyter environment, use `repo2docker`:
+If you want the unreleased `main` branch instead of the latest published version:
 
 ```bash
-jupyter-repo2docker https://github.com/skilledwolf/contimod_graphene.git
+pip install git+https://github.com/skilledwolf/contimod_graphene.git
 ```
 
-Requirements: Docker plus `repo2docker`. This path is convenient, but not tested on every platform.
+For local development, clone the repo and run `pip install -e ".[dev]"`. If you prefer `hatch`, use `hatch env create` and `hatch shell`.
 
-## Credit 
-This package is developed and maintained by Dr. Tobias Wolf. Feel free to contact us, and please give us credit if you use this work. 
-
-## Downstream Note
-
-`contimod_graphene` is intended to stand on its own. A separate downstream package, `contimod`, builds on top of this model layer for discretization, mesh/state containers, and many-body workflows, but it is not required for normal use here.
+## Author
+Tobias Wolf (`public@wolft.xyz`) is the author and maintainer of this package. Please give appropriate credit if you use this work.
