@@ -238,7 +238,18 @@ def test_blg_ll_zero_modes_and_ab_equivalence(B: float, valley: str):
 @pytest.mark.parametrize(
     ("family", "n_layers", "params"),
     [
-        pytest.param("bernal", 2, cg.GrapheneTBParameters.preset("blg").replace(U=0.0), id="bernal-bilayer"),
+        pytest.param(
+            "bernal",
+            2,
+            cg.GrapheneTBParameters.preset("blg").replace(U=0.0, Delta=0.0),
+            id="bernal-bilayer",
+        ),
+        pytest.param(
+            "bernal",
+            4,
+            cg.GrapheneTBParameters.preset("4lg").replace(U=0.0, Delta=0.0),
+            id="bernal-tetralayer",
+        ),
         pytest.param("rhombohedral", 3, cg.GrapheneTBParameters.preset("tlg").replace(U=0.0), id="abc-trilayer"),
         pytest.param("rhombohedral", 4, cg.GrapheneTBParameters.preset("4lg").replace(U=0.0), id="abc-tetralayer"),
     ],

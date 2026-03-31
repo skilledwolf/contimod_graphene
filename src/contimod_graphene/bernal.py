@@ -104,10 +104,13 @@ def hamiltonian(kx: float, ky: float, n_layers: int = 3, params: dict = graphene
     V_even = jnp.array([[-v4 * pi, gamma1],
                         [v3 * jnp.conj(pi), -v4 * pi]])
 
-    # Next-nearest layer block W (1->3, 2->4...)
-    # A_j -> A_{j+2} (gamma2), B_j -> B_{j+2} (gamma5)
-    W = jnp.array([[gamma2 / 2, 0], 
-                   [0, gamma5 / 2]])
+    # Next-nearest layer blocks alternate with the Bernal stacking parity.
+    # Odd-starting links (1->3, 3->5, ...) use W_odd, while even-starting
+    # links (2->4, 4->6, ...) swap the gamma2 / gamma5 diagonal entries.
+    W_odd = jnp.array([[gamma2 / 2, 0], 
+                       [0, gamma5 / 2]])
+    W_even = jnp.array([[gamma5 / 2, 0],
+                        [0, gamma2 / 2]])
 
     # Construct Hamiltonian blocks
     # We construct the upper triangular part and then hermitianize
@@ -130,9 +133,9 @@ def hamiltonian(kx: float, ky: float, n_layers: int = 3, params: dict = graphene
             else: # 1->2 (Layer 2->3) -> V_even
                 blocks[i][i+1] = V_even
                 
-        # Next-nearest W
+        # Next-nearest W / W'
         if i + 2 < n_layers:
-            blocks[i][i+2] = W
+            blocks[i][i+2] = W_odd if i % 2 == 0 else W_even
             
     M = jnp.block(blocks)
     M = M + M.conj().T
@@ -261,11 +264,15 @@ def hamiltonian_LL(B: float, n_layers: int = 3, n_cut: int = 50, flip_valley: bo
                            [V_even_BA, V_even_BB]])
 
     # W (1->3, 2->4...): Next-nearest
-    # W_AA = gamma2/2, W_BB = gamma5/2
-    W_AA = (γ2 / 2.0) * np.eye(N_A)
-    W_BB = (γ5 / 2.0) * np.eye(N_B)
-    W = np.block([[W_AA, Z_AB],
-                  [Z_BA, W_BB]])
+    # Next-nearest layer blocks alternate with the Bernal stacking parity.
+    W_odd_AA = (γ2 / 2.0) * np.eye(N_A)
+    W_odd_BB = (γ5 / 2.0) * np.eye(N_B)
+    W_even_AA = (γ5 / 2.0) * np.eye(N_A)
+    W_even_BB = (γ2 / 2.0) * np.eye(N_B)
+    W_odd = np.block([[W_odd_AA, Z_AB],
+                      [Z_BA, W_odd_BB]])
+    W_even = np.block([[W_even_AA, Z_AB],
+                       [Z_BA, W_even_BB]])
 
     # ---------- assemble multilayer Hamiltonian ----------
     d_layer = N_A + N_B
@@ -286,7 +293,7 @@ def hamiltonian_LL(B: float, n_layers: int = 3, n_cut: int = 50, flip_valley: bo
                 blocks[i][i+1] = V_even
                 
         if i + 2 < n_layers:
-            blocks[i][i+2] = W
+            blocks[i][i+2] = W_odd if i % 2 == 0 else W_even
             
     M = np.block(blocks)
     M = M + M.conj().T

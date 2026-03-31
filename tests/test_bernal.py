@@ -53,5 +53,28 @@ class TestBernal(unittest.TestCase):
             atol=1e-10,
         )
 
+    def test_zero_field_next_nearest_layer_blocks_swap_gamma2_gamma5_on_even_links(self):
+        params = dict(self.params)
+        params.update(
+            {
+                "gamma0": 0.0,
+                "gamma1": 0.0,
+                "gamma2": 12.0,
+                "gamma3": 0.0,
+                "gamma4": 0.0,
+                "gamma5": 34.0,
+                "U": 0.0,
+                "Delta": 0.0,
+                "delta": 0.0,
+            }
+        )
+
+        h_mat = np.asarray(bernal.hamiltonian(0.0, 0.0, n_layers=4, params=params))
+
+        np.testing.assert_allclose(h_mat[0:2, 4:6], np.diag([6.0, 17.0]), atol=1e-10, rtol=1e-10)
+        np.testing.assert_allclose(h_mat[2:4, 6:8], np.diag([17.0, 6.0]), atol=1e-10, rtol=1e-10)
+        np.testing.assert_allclose(h_mat[4:6, 0:2], np.diag([6.0, 17.0]), atol=1e-10, rtol=1e-10)
+        np.testing.assert_allclose(h_mat[6:8, 2:4], np.diag([17.0, 6.0]), atol=1e-10, rtol=1e-10)
+
 if __name__ == '__main__':
     unittest.main()
