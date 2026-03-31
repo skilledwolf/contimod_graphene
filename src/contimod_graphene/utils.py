@@ -5,6 +5,8 @@ import jax.numpy as jnp
 from .basis import (
     bernal_dimer_mask,
     bernal_nondimer_mask,
+    bernal_trilayer_mirror_block_unitary,
+    bernal_trilayer_mirror_layer_unitary,
     bernal_trilayer_mirror_operator,
     bernal_trilayer_mirror_projectors,
     bernal_trilayer_mirror_unitary,
@@ -102,6 +104,8 @@ __all__ = [
     "batch_hamiltonian",
     "bernal_dimer_mask",
     "bernal_nondimer_mask",
+    "bernal_trilayer_mirror_block_unitary",
+    "bernal_trilayer_mirror_layer_unitary",
     "bernal_trilayer_mirror_operator",
     "bernal_trilayer_mirror_projectors",
     "bernal_trilayer_mirror_unitary",

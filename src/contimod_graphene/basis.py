@@ -139,34 +139,49 @@ def bernal_dimer_mask(n_layers: int) -> np.ndarray:
 def bernal_trilayer_mirror_unitary(
     dtype: type[np.complexfloating] | type[np.floating] | type[np.bool_] = complex,
 ) -> np.ndarray:
-    """Return the ABA-trilayer mirror basis unitary for `(A1, B1, A2, B2, A3, B3)`.
+    """Return the ABA-trilayer zero-field mirror basis unitary for `(A1, B1, A2, B2, A3, B3)`.
 
-    The returned columns are ordered as:
-    `((A1-A3)/sqrt(2), (B1-B3)/sqrt(2), (A1+A3)/sqrt(2), (B1+B3)/sqrt(2), A2, B2)`.
-    The first two columns therefore span the odd mirror-parity sector and the last
-    four span the even sector.
+    This is equivalent to `bernal_trilayer_mirror_block_unitary(2)`.
+    """
+    return bernal_trilayer_mirror_block_unitary(2, dtype=dtype)
+
+
+def bernal_trilayer_mirror_layer_unitary(
+    dtype: type[np.complexfloating] | type[np.floating] | type[np.bool_] = complex,
+) -> np.ndarray:
+    """Return the 3x3 layer-parity unitary for ABA trilayer graphene.
+
+    The columns are ordered as `(L1-L3)/sqrt(2)`, `(L1+L3)/sqrt(2)`, and `L2`.
+    Any per-layer orbital block can be transformed by taking a Kronecker product
+    with the identity on that block.
     """
     scale = 1.0 / np.sqrt(2.0)
-    U = np.zeros((6, 6), dtype=dtype)
+    return np.array(
+        [
+            [scale, scale, 0.0],
+            [0.0, 0.0, 1.0],
+            [-scale, scale, 0.0],
+        ],
+        dtype=dtype,
+    )
 
-    a1 = zero_field_orbital_index(3, 1, "A")
-    b1 = zero_field_orbital_index(3, 1, "B")
-    a2 = zero_field_orbital_index(3, 2, "A")
-    b2 = zero_field_orbital_index(3, 2, "B")
-    a3 = zero_field_orbital_index(3, 3, "A")
-    b3 = zero_field_orbital_index(3, 3, "B")
 
-    U[a1, 0] = scale
-    U[a3, 0] = -scale
-    U[b1, 1] = scale
-    U[b3, 1] = -scale
-    U[a1, 2] = scale
-    U[a3, 2] = scale
-    U[b1, 3] = scale
-    U[b3, 3] = scale
-    U[a2, 4] = 1.0
-    U[b2, 5] = 1.0
-    return U
+def bernal_trilayer_mirror_block_unitary(
+    block_size: int,
+    *,
+    dtype: type[np.complexfloating] | type[np.floating] | type[np.bool_] = complex,
+) -> np.ndarray:
+    """Return the ABA-trilayer mirror unitary for a generic per-layer block size.
+
+    For `block_size=2`, this reproduces the zero-field orbital transform with
+    columns ordered as:
+    `((A1-A3)/sqrt(2), (B1-B3)/sqrt(2), (A1+A3)/sqrt(2), (B1+B3)/sqrt(2), A2, B2)`.
+    """
+    block_size = int(block_size)
+    if block_size < 1:
+        raise ValueError("block_size must be >= 1")
+    layer_unitary = bernal_trilayer_mirror_layer_unitary(dtype=dtype)
+    return np.kron(layer_unitary, np.eye(block_size, dtype=dtype))
 
 
 def bernal_trilayer_mirror_projectors(
@@ -269,6 +284,8 @@ def build_ops(
 __all__ = [
     "PAULI",
     "bernal_dimer_mask",
+    "bernal_trilayer_mirror_block_unitary",
+    "bernal_trilayer_mirror_layer_unitary",
     "bernal_nondimer_mask",
     "bernal_trilayer_mirror_operator",
     "bernal_trilayer_mirror_projectors",

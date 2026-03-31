@@ -88,10 +88,14 @@ def test_zero_field_basis_helpers_expose_named_site_metadata():
     )
 
     mirror_unitary = cg.basis.bernal_trilayer_mirror_unitary()
+    mirror_layer_unitary = cg.basis.bernal_trilayer_mirror_layer_unitary()
+    mirror_block_unitary = cg.basis.bernal_trilayer_mirror_block_unitary(2)
     mirror_operator = cg.basis.bernal_trilayer_mirror_operator(dtype=float)
     odd_projector, even_projector = cg.basis.bernal_trilayer_mirror_projectors()
 
     assert mirror_unitary.shape == (6, 6)
+    np.testing.assert_allclose(mirror_layer_unitary.conj().T @ mirror_layer_unitary, np.eye(3), atol=1e-12, rtol=1e-12)
+    np.testing.assert_allclose(mirror_block_unitary, mirror_unitary, atol=1e-12, rtol=1e-12)
     np.testing.assert_allclose(
         mirror_operator,
         np.array(
@@ -205,6 +209,39 @@ def test_blg_ll_zero_modes_and_ab_equivalence(B: float, valley: str):
 
     np.testing.assert_allclose(bernal_evals, rhombohedral_evals, atol=5e-5, rtol=1e-10)
     assert np.count_nonzero(np.abs(bernal_evals) < 1e-10) == 2
+
+
+@pytest.mark.parametrize("valley", ["K", "K'"])
+@pytest.mark.parametrize("B", [0.5, 1.0, 2.0])
+def test_aba_trilayer_clean_ll_mirror_blocks_match_monolayer_and_bilayer_like_models(
+    B: float,
+    valley: str,
+):
+    params = _clean_aba_trilayer_params()
+    trilayer_model = cg.BernalMultilayer(n_layers=3, params=params)
+    monolayer_model = cg.BernalMultilayer(n_layers=1, params=params)
+    bilayer_like_model = cg.BernalMultilayer(
+        n_layers=2,
+        params=params.replace(gamma1=np.sqrt(2.0) * float(params["gamma1"])),
+    )
+
+    n_cut = 12
+    trilayer_ll = trilayer_model.landau_level_hamiltonian(B, n_cut=n_cut, valley=valley)
+    monolayer_ll = monolayer_model.landau_level_hamiltonian(B, n_cut=n_cut, valley=valley)
+    bilayer_like_ll = bilayer_like_model.landau_level_hamiltonian(B, n_cut=n_cut, valley=valley)
+
+    d_layer = trilayer_ll.shape[0] // 3
+    mirror_block_unitary = cg.basis.bernal_trilayer_mirror_block_unitary(d_layer)
+    trilayer_mirror = mirror_block_unitary.conj().T @ trilayer_ll @ mirror_block_unitary
+
+    odd_block = trilayer_mirror[:d_layer, :d_layer]
+    even_block = trilayer_mirror[d_layer:, d_layer:]
+    off_block = trilayer_mirror[:d_layer, d_layer:]
+    scale = max(np.linalg.norm(trilayer_ll), 1.0)
+
+    np.testing.assert_allclose(odd_block, monolayer_ll, atol=2e-5, rtol=1e-10)
+    np.testing.assert_allclose(even_block, bilayer_like_ll, atol=1e-4, rtol=1e-10)
+    assert np.linalg.norm(off_block) / scale < 1e-7
 
 
 def test_aba_trilayer_mirror_parity_blocks_decouple_and_u_breaks_them():
