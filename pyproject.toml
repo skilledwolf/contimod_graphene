@@ -42,8 +42,8 @@ dev = [
 ]
 docs = [
     "sphinx",
-    "sphinx_rtd_theme",
-    "myst-parser",
+    "sphinx-book-theme",
+    "myst-nb",
     "matplotlib",
 ]
 
