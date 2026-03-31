@@ -6,6 +6,9 @@
 temp_*.py
 
 rsync_to_lonestar.sh
+AGENTS.md
+Roadmap.md
+*.local.md
 
 .python-version
 .devcontainer/*

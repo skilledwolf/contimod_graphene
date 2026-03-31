@@ -6,6 +6,8 @@ Bernal (ABA) and Rhombohedral (ABC) Hamiltonians, validated parameter sets,
 immutable model objects, basis metadata, and symmetry helpers.
 """
 
+from importlib.metadata import PackageNotFoundError, version as package_version
+
 from .models import ABAMultilayer, ABCMultilayer, BernalMultilayer, RhombohedralMultilayer
 from .params import (
     GrapheneTBParameters,
@@ -23,12 +25,21 @@ from . import basis
 from . import symmetry
 from . import models
 
+try:
+    from ._version import version as __version__
+except ImportError:
+    try:
+        __version__ = package_version("contimod_graphene")
+    except PackageNotFoundError:
+        __version__ = "0+unknown"
+
 __all__ = [
     "ABAMultilayer",
     "ABCMultilayer",
     "BernalMultilayer",
     "GrapheneTBParameters",
     "RhombohedralMultilayer",
+    "__version__",
     "params",
     "models",
     "rhombohedral",

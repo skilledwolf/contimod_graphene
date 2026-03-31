@@ -7,14 +7,23 @@ name = "contimod_graphene"
 description = "Standalone multilayer graphene Hamiltonians and single-particle utilities."
 readme = "README.md"
 requires-python = ">=3.10"
+authors = [
+    {name = "Tobias Wolf", email = "public@wolft.xyz"},
+]
 keywords = ["physics", "condensed matter", "graphene"]
-license = {text = "BSD 2-clause"}
+license = {file = "LICENSE"}
+license-files = ["LICENSE"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: BSD License",
-    "Programming Language :: Python :: 3"
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
+urls = {Homepage = "https://github.com/skilledwolf/contimod_graphene", Repository = "https://github.com/skilledwolf/contimod_graphene", Issues = "https://github.com/skilledwolf/contimod_graphene/issues"}
 dynamic = ["version"]
 
 dependencies = [
@@ -25,9 +34,11 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "build",
     "pytest",
     "black",
     "matplotlib",
+    "twine",
 ]
 docs = [
     "sphinx",
@@ -37,11 +48,7 @@ docs = [
 ]
 
 [tool.hatch.build.targets.wheel]
-sources = ["src"]
-#only-packages = true
-
-[tool.hatch.build.targets.sdist]
-only-include = ["src"] 
+packages = ["src/contimod_graphene"]
 
 [tool.hatch.version]
 source = "vcs"

@@ -1,6 +1,6 @@
 # Standalone Examples
 
-This page is the figure gallery. For the fastest API overview, equations, and shape conventions, start with [usage.md](/Users/wolft/Dev/contimod_graphene/docs/usage.md).
+This page is the figure gallery. For the fastest API overview, equations, and shape conventions, start with [usage.md](usage.md).
 
 The maintained standalone entry points are:
 - `examples/standalone_quickstart.py` for a one-file smoke test
@@ -168,4 +168,4 @@ Interpretation: the outer pair sits far from neutrality, while the inner four ba
 
 `contimod_example.ipynb` is intentionally the one notebook in `examples/` that assumes the separate downstream `contimod` package is installed.
 
-The older notebooks `bandstructure_plots.ipynb`, `bernal_bands_LL.ipynb`, and `landau_level_fans.ipynb` remain useful exploratory references, but the maintained default workflow should start from `examples/standalone_quickstart.py`, `examples/standalone_gallery.py`, or the short snippets in [usage.md](/Users/wolft/Dev/contimod_graphene/docs/usage.md).
+The older notebooks `bandstructure_plots.ipynb`, `bernal_bands_LL.ipynb`, and `landau_level_fans.ipynb` remain useful exploratory references, but the maintained default workflow should start from `examples/standalone_quickstart.py`, `examples/standalone_gallery.py`, or the short snippets in [usage.md](usage.md).

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from importlib.resources import files
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Mapping
@@ -11,10 +12,9 @@ from typing import Any, Mapping
 import jax
 
 
-_HERE = Path(__file__).resolve().parent
-_DEFAULT_JSON = (_HERE.parent.parent / "data" / "params.json").resolve()
+_DEFAULT_JSON = files("contimod_graphene.data").joinpath("params.json")
 
-with _DEFAULT_JSON.open() as f:
+with _DEFAULT_JSON.open("r", encoding="utf-8") as f:
     _DATA = json.load(f)
 
 _ALIASES = {**_DATA.get("aliases", {})}

@@ -36,6 +36,9 @@ def test_readme_and_usage_quickstart_surface_smoke(tmp_path):
     params = cg.GrapheneTBParameters.preset("tlg").replace(U=20.0, Delta=0.0)
     model = cg.RhombohedralMultilayer(n_layers=3, params=params)
 
+    assert isinstance(cg.__version__, str)
+    assert cg.__version__
+
     h0 = np.asarray(model.hamiltonian(0.1, 0.0))
     h2 = np.asarray(model.two_band_hamiltonian(0.1, 0.0))
     sample_h2 = np.linalg.eigvalsh(np.asarray(model.two_band_hamiltonian(0.02, 0.0)))

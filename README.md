@@ -14,9 +14,9 @@ It includes both zero-field Hamiltonians and Landau-level (LL) Hamiltonians.
 
 The maintained starting points are:
 - the top-level public API shown below
-- [docs/usage.md](/Users/wolft/Dev/contimod_graphene/docs/usage.md)
-- [examples/standalone_gallery.py](/Users/wolft/Dev/contimod_graphene/examples/standalone_gallery.py)
-- [examples/standalone_quickstart.py](/Users/wolft/Dev/contimod_graphene/examples/standalone_quickstart.py)
+- [docs/usage.md](https://github.com/skilledwolf/contimod_graphene/blob/main/docs/usage.md)
+- [examples/standalone_gallery.py](https://github.com/skilledwolf/contimod_graphene/blob/main/examples/standalone_gallery.py)
+- [examples/standalone_quickstart.py](https://github.com/skilledwolf/contimod_graphene/blob/main/examples/standalone_quickstart.py)
 
 For examples/tests on this machine, prefer `JAX_PLATFORMS=cpu`; the Apple Metal backend still hits known JAX failures in this repo.
 
@@ -62,7 +62,7 @@ Physicist-friendly aliases are also available:
 - `ABAMultilayer`
 - `ABCMultilayer`
 
-For a slightly longer walkthrough with equations, conventions, and more outputs, see [docs/usage.md](/Users/wolft/Dev/contimod_graphene/docs/usage.md). For maintained example material, start with [examples/standalone_quickstart.py](/Users/wolft/Dev/contimod_graphene/examples/standalone_quickstart.py), [docs/examples.md](/Users/wolft/Dev/contimod_graphene/docs/examples.md), and [examples/README.md](/Users/wolft/Dev/contimod_graphene/examples/README.md).
+For a slightly longer walkthrough with equations, conventions, and more outputs, see [docs/usage.md](https://github.com/skilledwolf/contimod_graphene/blob/main/docs/usage.md). For maintained example material, start with [examples/standalone_quickstart.py](https://github.com/skilledwolf/contimod_graphene/blob/main/examples/standalone_quickstart.py), [docs/examples.md](https://github.com/skilledwolf/contimod_graphene/blob/main/docs/examples.md), and [examples/README.md](https://github.com/skilledwolf/contimod_graphene/blob/main/examples/README.md).
 
 ## Physics At A Glance
 
