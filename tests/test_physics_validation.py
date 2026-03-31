@@ -50,6 +50,10 @@ def _aba_trilayer_params(*, U: float = 0.0) -> cg.GrapheneTBParameters:
     )
 
 
+def _aba_trilayer_source_aligned_params(*, U: float = 0.0, gamma3: float = 315.0) -> cg.GrapheneTBParameters:
+    return _aba_trilayer_params(U=U).replace(Delta=0.0, gamma3=gamma3)
+
+
 def _clean_aba_trilayer_params() -> cg.GrapheneTBParameters:
     return _clean_bernal_bilayer_params()
 
@@ -68,6 +72,42 @@ def _aba_trilayer_monolayer_like_params(params: cg.GrapheneTBParameters) -> cg.G
     return params.replace(
         Delta=float(params["Delta"]) - gamma2,
         delta=float(params["delta"]) - 0.5 * (gamma2 + gamma5),
+    )
+
+
+def _aba_trilayer_bilayer_like_params(params: cg.GrapheneTBParameters) -> cg.GrapheneTBParameters:
+    lambda2 = np.sqrt(2.0)
+    return params.replace(
+        gamma1=lambda2 * float(params["gamma1"]),
+        gamma3=lambda2 * float(params["gamma3"]),
+        gamma4=lambda2 * float(params["gamma4"]),
+        gamma2=0.0,
+        gamma5=0.0,
+    )
+
+
+def _aba_trilayer_bilayer_like_w_correction(
+    params: cg.GrapheneTBParameters,
+    *,
+    n_cut: int,
+    valley: str,
+) -> np.ndarray:
+    n_a, n_b = (n_cut - 1, n_cut) if valley == "K" else (n_cut, n_cut - 1)
+    zeros_ab = np.zeros((n_a, n_b))
+    zeros_ba = np.zeros((n_b, n_a))
+    zeros_aa = np.zeros((n_a, n_a))
+    zeros_bb = np.zeros((n_b, n_b))
+
+    gamma2 = float(params["gamma2"])
+    gamma5 = float(params["gamma5"])
+
+    return np.block(
+        [
+            [(gamma2 / 2.0) * np.eye(n_a), zeros_ab, zeros_aa, zeros_ab],
+            [zeros_ba, (gamma5 / 2.0) * np.eye(n_b), zeros_ba, zeros_bb],
+            [zeros_aa, zeros_ab, zeros_aa, zeros_ab],
+            [zeros_ba, zeros_bb, zeros_ba, zeros_bb],
+        ]
     )
 
 
@@ -381,6 +421,36 @@ def test_aba_trilayer_full_parameter_odd_ll_block_matches_monolayerlike_block(
     monolayerlike_ll = monolayerlike_model.landau_level_hamiltonian(B, n_cut=n_cut, valley=valley)
 
     np.testing.assert_allclose(odd_block, monolayerlike_ll, atol=5e-5, rtol=1e-10)
+
+
+@pytest.mark.parametrize("valley", ["K", "K'"])
+@pytest.mark.parametrize("B", [0.5, 1.0, 2.0, 5.0])
+def test_aba_trilayer_source_aligned_even_ll_block_matches_bilayerlike_h2_block(
+    B: float,
+    valley: str,
+):
+    params = _aba_trilayer_source_aligned_params(U=0.0)
+    trilayer_model = cg.BernalMultilayer(n_layers=3, params=params)
+    bilayerlike_model = cg.BernalMultilayer(
+        n_layers=2,
+        params=_aba_trilayer_bilayer_like_params(params),
+    )
+
+    n_cut = 20
+    _, _, even_block, _ = _aba_trilayer_ll_mirror_blocks(
+        trilayer_model,
+        B=B,
+        n_cut=n_cut,
+        valley=valley,
+    )
+    bilayerlike_ll = bilayerlike_model.landau_level_hamiltonian(B, n_cut=n_cut, valley=valley)
+    expected_block = bilayerlike_ll + _aba_trilayer_bilayer_like_w_correction(
+        params,
+        n_cut=n_cut,
+        valley=valley,
+    )
+
+    np.testing.assert_allclose(even_block, expected_block, atol=5e-5, rtol=1e-10)
 
 
 def test_aba_trilayer_mirror_parity_blocks_decouple_and_u_breaks_them():
