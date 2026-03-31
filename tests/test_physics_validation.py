@@ -72,6 +72,16 @@ def _aba_trilayer_ll_mirror_blocks(
     return h_ll, h_mirror[:d_layer, :d_layer], h_mirror[d_layer:, d_layer:], h_mirror[:d_layer, d_layer:]
 
 
+def _ll_eigenvalues(
+    model: cg.BernalMultilayer | cg.RhombohedralMultilayer,
+    *,
+    B: float,
+    n_cut: int,
+    valley: str,
+) -> np.ndarray:
+    return np.linalg.eigvalsh(np.asarray(model.landau_level_hamiltonian(B, n_cut=n_cut, valley=valley)))
+
+
 def test_zero_field_basis_helpers_expose_named_site_metadata():
     assert cg.basis.zero_field_orbital_labels(4) == ("A1", "B1", "A2", "B2", "A3", "B3", "A4", "B4")
     assert cg.basis.zero_field_orbital_index(4, 3, "B") == 5
@@ -223,6 +233,32 @@ def test_blg_ll_zero_modes_and_ab_equivalence(B: float, valley: str):
 
     np.testing.assert_allclose(bernal_evals, rhombohedral_evals, atol=5e-5, rtol=1e-10)
     assert np.count_nonzero(np.abs(bernal_evals) < 1e-10) == 2
+
+
+@pytest.mark.parametrize(
+    ("family", "n_layers", "params"),
+    [
+        pytest.param("bernal", 2, cg.GrapheneTBParameters.preset("blg").replace(U=0.0), id="bernal-bilayer"),
+        pytest.param("rhombohedral", 3, cg.GrapheneTBParameters.preset("tlg").replace(U=0.0), id="abc-trilayer"),
+        pytest.param("rhombohedral", 4, cg.GrapheneTBParameters.preset("4lg").replace(U=0.0), id="abc-tetralayer"),
+    ],
+)
+@pytest.mark.parametrize("B", [0.5, 2.0, 5.0])
+def test_inversion_symmetric_ll_spectra_match_between_valleys(
+    family: str,
+    n_layers: int,
+    params: cg.GrapheneTBParameters,
+    B: float,
+):
+    if family == "bernal":
+        model = cg.BernalMultilayer(n_layers=n_layers, params=params)
+    else:
+        model = cg.RhombohedralMultilayer(n_layers=n_layers, params=params)
+
+    evals_k = _ll_eigenvalues(model, B=B, n_cut=12, valley="K")
+    evals_kprime = _ll_eigenvalues(model, B=B, n_cut=12, valley="K'")
+
+    np.testing.assert_allclose(evals_k, evals_kprime, atol=1e-9, rtol=1e-10)
 
 
 @pytest.mark.parametrize("valley", ["K", "K'"])

@@ -21,6 +21,7 @@ This note records the package-specific convention map and the first paper-backed
 | McCann & Koshino, Rep. Prog. Phys. 76, 056503 (2013) | AB bilayer zero-field 4-band spectrum and low-energy two-band reduction | Anchors the clean BLG exact-band and low-energy reduction tests |
 | Koshino & McCann, Phys. Rev. B 83, 165443 (2011) | ABA trilayer mirror-parity decomposition into odd/even sectors | Anchors the ABA trilayer mirror-parity block-decoupling tests, the clean odd/even sector spectrum checks, the clean LL decomposition into monolayer-like and bilayer-like sectors, and the full-parameter LL mirror-decoupling checks |
 | Koshino & McCann, Phys. Rev. B 80, 165409 (2009) | ABC trilayer and general `N`-layer low-energy reductions | Anchors the ABC `k^3` / `k^4` scaling and full-vs-two-band checks |
+| Koshino & McCann, Phys. Rev. B 81, 115315 (2010) | Inversion-protected valley degeneracy in even Bernal stacks and all rhombohedral stacks | Anchors the LL `K/K'` spectral-degeneracy checks that are currently asserted for Bernal bilayer and rhombohedral trilayer/tetralayer at `U=0` |
 | Min & MacDonald, Prog. Theor. Phys. Suppl. 176, 227 (2008) | Nearest-neighbor chiral doublets and outer-site zero modes in ABC stacks | Anchors the `k=0` outer-site localization tests for ABC trilayer and tetralayer |
 | Koshino, Phys. Rev. B 81, 125304 (2010) | AB as the `N=2` member shared by Bernal and rhombohedral stacking families | Anchors the bilayer Bernal/ABC spectral equivalence checks |
 
@@ -37,6 +38,7 @@ The current fast physics-validation tier is:
 7. ABA trilayer full-parameter LL mirror structure: with the realistic ABA parameter set and `U=0`, the LL Hamiltonian still block-diagonalizes in the mirror basis, and finite `U` recouples the odd/even sectors.
 8. ABC trilayer and tetralayer outer-site zero modes at `k=0`.
 9. ABC trilayer and tetralayer `E ~ k^N` scaling plus low-energy agreement between the full and projected two-band models.
+10. Inversion-protected LL valley degeneracy for Bernal bilayer and rhombohedral trilayer/tetralayer at `U=0`, compared through sorted `K/K'` spectra rather than raw LL matrices.
 
 These are implemented in [tests/test_physics_validation.py](/Users/wolft/Dev/contimod_graphene/tests/test_physics_validation.py) and rely on the zero-field basis helpers in [src/contimod_graphene/basis.py](/Users/wolft/Dev/contimod_graphene/src/contimod_graphene/basis.py), including the explicit ABA trilayer mirror-basis operator, zero-field unitary, generic layer/block unitaries, and odd/even projectors.
 
@@ -46,5 +48,6 @@ These are implemented in [tests/test_physics_validation.py](/Users/wolft/Dev/con
 - Rhombohedral `Delta` is now validated as a distinct even layer-offset term relative to `U`, but only the trilayer meaning is directly paper-backed. The scalar `N>3` extension remains a package convention.
 - The rhombohedral `delta` slot is intentionally unused for now. The ABC kernels accept it only for shared-parameter compatibility, and tests pin that it does not affect zero-field, two-band, or LL outputs until a source-backed onsite meaning is adopted.
 - ABA trilayer detailed full-parameter LL-shape regressions remain deferred. The fast suite now covers exact mirror-basis decoupling at realistic ABA parameters and clean monolayer-like / bilayer-like LL decomposition, but not trigonal-warping-driven crossings or finite-parameter anticrossings yet.
+- Higher-even-layer Bernal LL valley-degeneracy checks remain deferred. The literature suggests an inversion-protected even-`N` statement, but local `N=4` probes with the current `4lg` preset still show sizable `K/K'` splittings, so that broader Bernal claim needs source-backed reconciliation before it should enter CI.
 - Zero-field valley-degeneracy tests remain deferred because the zero-field public Hamiltonians do not expose a valley switch.
 - Bilayer finite-`gamma3` Lifshitz topology, ABA modulo-3 LL anticrossings, and ABC low-field LL triplets belong in a slower regression tier rather than the default fast suite.
