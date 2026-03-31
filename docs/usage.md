@@ -140,6 +140,12 @@ These functions remain the computational core that the model objects wrap.
 
 ## Units and Conventions
 
+### Parameter naming
+
+- **Bernal `delta`** is the dimer/non-dimer onsite offset. This is the package knob that is closest to the bilayer literature's `Δ'` convention.
+- **Bernal `Delta`** is a package-defined A/B sublattice mass term `(+Delta/2 on A, -Delta/2 on B)`. For exact even-layer Bernal inversion-symmetry tests, pin `U=0.0` and `Delta=0.0`.
+- **Rhombohedral `Delta`** matches the standard trilayer `Δ2` meaning only for `n_layers=3`. For `n_layers>3`, the package reuses the same scalar as a mean-zero inversion-even layer-curvature parameter.
+
 - **Energies**: tight-binding parameters are in meV.
 - **Momentum**: `kx` and `ky` are in inverse-length units consistent with the chosen parameterization.
 - **Magnetic field**: `B` is in Tesla.

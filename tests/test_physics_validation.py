@@ -58,6 +58,10 @@ def _delta_bernal_bilayer_params(Delta: float = 20.0) -> cg.GrapheneTBParameters
     return _clean_bernal_bilayer_params().replace(Delta=Delta)
 
 
+def _full_even_n_bernal_params() -> cg.GrapheneTBParameters:
+    return cg.GrapheneTBParameters.preset("4lg").replace(U=0.0, Delta=0.0)
+
+
 def _aba_trilayer_ll_mirror_blocks(
     model: cg.BernalMultilayer,
     *,
@@ -247,8 +251,14 @@ def test_blg_ll_zero_modes_and_ab_equivalence(B: float, valley: str):
         pytest.param(
             "bernal",
             4,
-            cg.GrapheneTBParameters.preset("4lg").replace(U=0.0, Delta=0.0),
+            _full_even_n_bernal_params(),
             id="bernal-tetralayer",
+        ),
+        pytest.param(
+            "bernal",
+            6,
+            _full_even_n_bernal_params(),
+            id="bernal-hexalayer",
         ),
         pytest.param("rhombohedral", 3, cg.GrapheneTBParameters.preset("tlg").replace(U=0.0), id="abc-trilayer"),
         pytest.param("rhombohedral", 4, cg.GrapheneTBParameters.preset("4lg").replace(U=0.0), id="abc-tetralayer"),
