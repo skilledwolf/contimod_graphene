@@ -34,6 +34,10 @@ def _clean_rhombohedral_params(preset: str) -> cg.GrapheneTBParameters:
     )
 
 
+def _full_rhombohedral_params() -> cg.GrapheneTBParameters:
+    return cg.GrapheneTBParameters.preset("4lg").replace(U=0.0, Delta=0.0)
+
+
 def _aba_trilayer_params(*, U: float = 0.0) -> cg.GrapheneTBParameters:
     return cg.GrapheneTBParameters.from_dict(
         {
@@ -310,7 +314,8 @@ def test_blg_ll_zero_modes_and_ab_equivalence(B: float, valley: str):
             id="bernal-hexalayer",
         ),
         pytest.param("rhombohedral", 3, cg.GrapheneTBParameters.preset("tlg").replace(U=0.0), id="abc-trilayer"),
-        pytest.param("rhombohedral", 4, cg.GrapheneTBParameters.preset("4lg").replace(U=0.0), id="abc-tetralayer"),
+        pytest.param("rhombohedral", 4, _full_rhombohedral_params(), id="abc-tetralayer"),
+        pytest.param("rhombohedral", 5, _full_rhombohedral_params(), id="abc-pentalayer"),
     ],
 )
 @pytest.mark.parametrize("B", [0.5, 2.0, 5.0])
@@ -515,7 +520,7 @@ def test_aba_trilayer_clean_mirror_sectors_match_monolayer_and_bilayer_spectra()
         np.testing.assert_allclose(even_evals, expected_even, atol=2e-6, rtol=1e-10)
 
 
-@pytest.mark.parametrize(("n_layers", "preset"), [(3, "tlg"), (4, "4lg")])
+@pytest.mark.parametrize(("n_layers", "preset"), [(3, "tlg"), (4, "4lg"), (5, "4lg")])
 def test_abc_outer_site_zero_modes_at_k0(n_layers: int, preset: str):
     params = _clean_rhombohedral_params(preset)
     model = cg.RhombohedralMultilayer(n_layers=n_layers, params=params)
@@ -533,6 +538,19 @@ def test_abc_outer_site_zero_modes_at_k0(n_layers: int, preset: str):
         state = eigenvectors[:, index]
         outer_weight = np.real_if_close(state.conj() @ outer_projector @ state)
         assert float(outer_weight) == pytest.approx(1.0, abs=1e-12)
+
+
+@pytest.mark.parametrize(("n_layers", "preset"), [(3, "tlg"), (4, "4lg"), (5, "4lg")])
+@pytest.mark.parametrize("valley", ["K", "K'"])
+def test_abc_clean_ll_has_n_zero_modes_per_valley(n_layers: int, preset: str, valley: str):
+    params = _clean_rhombohedral_params(preset)
+    model = cg.RhombohedralMultilayer(n_layers=n_layers, params=params)
+
+    evals = np.linalg.eigvalsh(np.asarray(model.landau_level_hamiltonian(2.0, n_cut=20, valley=valley)))
+    abs_evals = np.sort(np.abs(evals))
+
+    assert np.count_nonzero(abs_evals < 1e-10) == n_layers
+    assert abs_evals[n_layers] > 1e-4
 
 
 def test_abc_trilayer_u_opens_gap_while_delta_shifts_low_energy_pair():
