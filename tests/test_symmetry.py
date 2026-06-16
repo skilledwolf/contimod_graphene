@@ -252,3 +252,164 @@ def test_svp_project_fn_multi_orb_idempotent():
     once = proj(A)
     twice = proj(once)
     np.testing.assert_allclose(np.array(once), np.array(twice), atol=1e-5)
+
+
+# ----------------------------------------------------------------------
+# C3 orbital unitary
+# ----------------------------------------------------------------------
+
+from contimod_graphene.symmetry import (
+    C3_OMEGA,
+    make_c3_group,
+    make_c3_group_2band,
+    make_c3_orbital_unitary,
+    make_c3_orbital_unitary_2band,
+)
+
+
+def test_make_c3_orbital_unitary_is_cube_root_of_identity():
+    """U^3 = I for every (valleyful, spinful) combination."""
+    for valleyful in (False, True):
+        for spinful in (False, True):
+            U = make_c3_orbital_unitary(
+                4, valleyful=valleyful, spinful=spinful,
+            )
+            np.testing.assert_allclose(
+                U @ U @ U, np.eye(U.shape[0], dtype=np.complex128),
+                atol=1e-12,
+                err_msg=f"valleyful={valleyful}, spinful={spinful}",
+            )
+            np.testing.assert_allclose(
+                U @ np.conj(U.T), np.eye(U.shape[0], dtype=np.complex128),
+                atol=1e-12,
+            )
+
+
+def test_make_c3_orbital_unitary_block_structure():
+    """The K-block diagonal phases are ω^((ℓ-1)+s); K' is the conjugate."""
+    N = 4
+    U = make_c3_orbital_unitary(N, valleyful=True, spinful=False)
+    expected_K = np.array(
+        [C3_OMEGA ** ((ell - 1) + s)
+         for ell in range(1, N + 1) for s in (0, 1)],
+        dtype=np.complex128,
+    )
+    np.testing.assert_allclose(np.diag(U)[: 2 * N], expected_K, atol=1e-12)
+    np.testing.assert_allclose(np.diag(U)[2 * N :], np.conj(expected_K), atol=1e-12)
+
+
+def test_make_c3_orbital_unitary_shapes():
+    """Shape grows as 2 (sublattice) × N (layer) × 2^valleyful × 2^spinful."""
+    N = 4
+    cases = {
+        (False, False): 2 * N,                          # 8
+        (True,  False): 2 * 2 * N,                       # 16
+        (False, True):  2 * 2 * N,                       # 16
+        (True,  True):  2 * 2 * 2 * N,                   # 32
+    }
+    for (vf, sf), expected_n in cases.items():
+        U = make_c3_orbital_unitary(N, valleyful=vf, spinful=sf)
+        assert U.shape == (expected_n, expected_n), (vf, sf)
+
+
+def test_make_c3_orbital_unitary_acts_trivially_on_spin():
+    """The spinful unitary is I_2 ⊗ U_valley — it commutes with any spin operator."""
+    # ``contimod`` is the private upstream package and is not a dependency of the
+    # public release; skip this cross-check when it is unavailable (e.g. CI/PyPI).
+    cm = pytest.importorskip("contimod")
+    H = cm.graphene.NlayerABC(N=4, valleyful=True, spinful=True, U=0.0)
+    U = make_c3_orbital_unitary(4, valleyful=True, spinful=True)
+    for axis in (1, 2, 3):
+        s = np.asarray(H.spin_op(axis))
+        np.testing.assert_allclose(
+            U @ s, s @ U, atol=1e-12,
+            err_msg=f"C3 should commute with spin_op({axis})",
+        )
+
+
+def test_make_c3_group_returns_three_powers():
+    G = make_c3_group(4, valleyful=True, spinful=True)
+    assert G.shape == (3, 32, 32)
+    np.testing.assert_allclose(G[0], np.eye(32, dtype=np.complex128), atol=1e-12)
+    np.testing.assert_allclose(G[1] @ G[1], G[2], atol=1e-12)
+    np.testing.assert_allclose(G[2] @ G[1], np.eye(32, dtype=np.complex128), atol=1e-12)
+
+
+# ---- 2-band (A1, B_N) C3 helpers -----------------------------------------
+
+def test_make_c3_orbital_unitary_2band_phases():
+    """In the (A1, B_N) basis the K-block diagonal is (ω^0, ω^N)."""
+    for N in (2, 3, 4, 5, 6):
+        U = make_c3_orbital_unitary_2band(N, valleyful=False, spinful=False)
+        np.testing.assert_allclose(
+            np.diag(U), np.array([1.0, C3_OMEGA ** N], dtype=np.complex128),
+            atol=1e-12, err_msg=f"N={N}",
+        )
+
+
+def test_make_c3_orbital_unitary_2band_is_cube_root_of_identity():
+    for N in (2, 3, 4, 5):
+        for valleyful in (False, True):
+            for spinful in (False, True):
+                U = make_c3_orbital_unitary_2band(
+                    N, valleyful=valleyful, spinful=spinful,
+                )
+                np.testing.assert_allclose(
+                    U @ U @ U, np.eye(U.shape[0], dtype=np.complex128),
+                    atol=1e-12,
+                    err_msg=f"N={N}, valleyful={valleyful}, spinful={spinful}",
+                )
+
+
+def test_make_c3_orbital_unitary_2band_shapes():
+    """Shape grows as 2 (sublattice, A1+B_N) × 2^valleyful × 2^spinful."""
+    cases = {
+        (False, False): 2,
+        (True,  False): 4,
+        (False, True):  4,
+        (True,  True):  8,
+    }
+    for (vf, sf), expected_n in cases.items():
+        U = make_c3_orbital_unitary_2band(4, valleyful=vf, spinful=sf)
+        assert U.shape == (expected_n, expected_n), (vf, sf)
+
+
+def test_make_c3_orbital_unitary_2band_K_prime_conjugate():
+    """K' block is the complex conjugate of the K block."""
+    N = 4
+    U = make_c3_orbital_unitary_2band(N, valleyful=True, spinful=False)
+    np.testing.assert_allclose(U[:2, :2], np.diag([1.0, C3_OMEGA ** N]), atol=1e-12)
+    np.testing.assert_allclose(
+        U[2:, 2:], np.diag([1.0, np.conj(C3_OMEGA ** N)]), atol=1e-12,
+    )
+    # No off-diagonal valley mixing.
+    np.testing.assert_allclose(U[:2, 2:], 0.0, atol=1e-12)
+    np.testing.assert_allclose(U[2:, :2], 0.0, atol=1e-12)
+
+
+def test_make_c3_group_2band_shape_and_powers():
+    G = make_c3_group_2band(4, valleyful=True, spinful=True)
+    assert G.shape == (3, 8, 8)
+    np.testing.assert_allclose(G[0], np.eye(8, dtype=np.complex128), atol=1e-12)
+    np.testing.assert_allclose(G[1] @ G[1], G[2], atol=1e-12)
+    np.testing.assert_allclose(G[2] @ G[1], np.eye(8, dtype=np.complex128), atol=1e-12)
+
+
+def test_make_c3_orbital_unitary_2band_rejects_n_layers_lt_2():
+    with pytest.raises(ValueError, match="n_layers >= 2"):
+        make_c3_orbital_unitary_2band(1)
+
+
+def test_make_c3_orbital_unitary_2band_matches_full_at_active_indices():
+    """The 2-band C3 phases should equal the corresponding entries of the full
+    (A1, B1, ..., A_N, B_N) C3 unitary at indices 0 (A1) and 2N-1 (B_N)."""
+    for N in (2, 3, 4, 5):
+        U_full = make_c3_orbital_unitary(N, valleyful=False, spinful=False)
+        U_2b = make_c3_orbital_unitary_2band(N, valleyful=False, spinful=False)
+        np.testing.assert_allclose(
+            U_2b[0, 0], U_full[0, 0], atol=1e-12, err_msg=f"N={N} A1",
+        )
+        np.testing.assert_allclose(
+            U_2b[1, 1], U_full[2 * N - 1, 2 * N - 1], atol=1e-12,
+            err_msg=f"N={N} B_N",
+        )
