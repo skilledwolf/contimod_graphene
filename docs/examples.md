@@ -166,6 +166,4 @@ Interpretation: the outer pair sits far from neutrality, while the inner four ba
 
 `examples/standalone_quickstart.py` is the smallest maintained script and writes a JSON summary of shapes, band extrema, and sample eigenvalues. It is the fastest way to check that the public API works on your machine.
 
-`contimod_example.ipynb` is intentionally the one notebook in `examples/` that assumes the separate downstream `contimod` package is installed.
-
 The older notebooks `bandstructure_plots.ipynb`, `bernal_bands_LL.ipynb`, and `landau_level_fans.ipynb` remain useful exploratory references, but the maintained default workflow should start from `examples/standalone_quickstart.py`, `examples/standalone_gallery.py`, or the short snippets in [usage.md](usage.md).

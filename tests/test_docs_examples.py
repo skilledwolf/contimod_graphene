@@ -224,7 +224,3 @@ def test_standalone_notebooks_use_public_api_without_contimod():
         assert "GrapheneTBParameters" in source
         assert "BernalMultilayer" in source or "RhombohedralMultilayer" in source
 
-
-def test_contimod_example_notebook_stays_explicitly_downstream():
-    source = _notebook_code("examples/contimod_example.ipynb")
-    assert "import contimod as cm" in source

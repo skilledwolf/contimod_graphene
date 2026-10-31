@@ -27,10 +27,3 @@ This directory contains two kinds of example material:
 
 These notebooks are useful longer-form references, but the standalone scripts
 above are the maintained starting point for the public API.
-
-## Downstream Integration
-
-- `contimod_example.ipynb`
-  - Explicit downstream integration example.
-  - Requires the external `contimod` package and is not part of the standalone
-    default usage story.
