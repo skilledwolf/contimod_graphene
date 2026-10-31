@@ -317,7 +317,7 @@ def test_make_c3_orbital_unitary_acts_trivially_on_spin():
     # ``contimod`` is the private upstream package and is not a dependency of the
     # public release; skip this cross-check when it is unavailable (e.g. CI/PyPI).
     cm = pytest.importorskip("contimod")
-    H = cm.graphene.NlayerABC(N=4, valleyful=True, spinful=True, U=0.0)
+    H = cm.graphene.Rhombohedral(4, valleyful=True, spinful=True, U=0.0)
     U = make_c3_orbital_unitary(4, valleyful=True, spinful=True)
     for axis in (1, 2, 3):
         s = np.asarray(H.spin_op(axis))

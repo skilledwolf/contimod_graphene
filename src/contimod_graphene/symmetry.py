@@ -34,9 +34,9 @@ def make_c3_orbital_unitary(
     valleyful: bool = True,
     spinful: bool = True,
 ) -> np.ndarray:
-    """C3z action on the NlayerABC orbital basis.
+    """C3z action on the Rhombohedral orbital basis.
 
-    The basis ordering used by ``contimod_graphene.NlayerABC`` is, slowest
+    The basis ordering used by ``contimod.materials.graphene.Rhombohedral`` is, slowest
     axis first: ``spin`` (when ``spinful``), ``valley`` (when ``valleyful``),
     then the eight ``(layer, sublattice)`` orbitals ``A1, B1, A2, B2, ..., AN, BN``.
 
@@ -116,7 +116,7 @@ def make_c3_orbital_unitary_2band(
 ) -> np.ndarray:
     """C3z action on the *projected* 2-band ABC basis (A1, B_N).
 
-    The analytic SW / band-restricted reductions of ``NlayerABC`` retain
+    The analytic SW / band-restricted reductions of ``Rhombohedral`` retain
     only the outer (A1, B_N) sublattices.  Restricted to that subspace,
     the diagonal C3z phases at valley K reduce to ``ω^0 = 1`` for A1 and
     ``ω^N`` for B_N (from ``ω^((ℓ-1) + s)`` with (ℓ, s) = (1, 0) and
@@ -124,8 +124,8 @@ def make_c3_orbital_unitary_2band(
     block is complex-conjugated; spin acts trivially.
 
     This is the 2-orbital companion to :func:`make_c3_orbital_unitary`,
-    needed by 2-band variants (``NlayerABC_2bands``,
-    ``MultilayerABC_2bands``, ``MultilayerAB_2bands``) where the full
+    needed by 2-band variants (``Rhombohedral(two_band=True)``,
+    ``Rhombohedral(3, two_band=True)``, ``Bernal(2, two_band=True)``) where the full
     N-layer C3 unitary would have the wrong dimension.
 
     Parameters
